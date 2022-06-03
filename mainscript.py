@@ -3,6 +3,7 @@ import cv2
 from solitairegamelogic import SolitaireBoard, Card
 import carddetection
 import solitairesections
+from threading import Thread
 
 def card_adapter(detection_cards):
     deck, waste, foundations, columns = detection_cards
@@ -63,8 +64,6 @@ def fix_card(wrong_name, correct_name, cards):
 testimg1 = cv2.imread("Cards1.JPG")
 testimg2 = cv2.imread("Cards2.JPG")
 
-def testfunc():
-    print("TESTTEST")
 
 if __name__ == "__main__":
     vid = cv2.VideoCapture(0)
@@ -73,46 +72,69 @@ if __name__ == "__main__":
     game_state = SolitaireBoard()
     
     while (True):
+        # - -  Get a frame from the video feed - -
+        isTrue, img = vid.read()
+        img = testimg1.copy()
+        original_img = img
 
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        # - - Detect cards in the frame - -
+        img, cards = carddetection.processing(img)
+        
+        # - - Place detected cards into columns - - 
+        cards_in_sections = solitairesections.place_cards(img, cards)
+        cards_in_sections = card_adapter(cards_in_sections)
+
+        print("If cards are detected correctly: Press Y to get move suggestion. If cards are detected incorrectly: Press N to correct cards")
+        cv2.imshow('image', img)
+
+        pressed_key = cv2.waitKey(-1)
+        if pressed_key & 0xFF == ord('q'):
             break
-        if cv2.waitKey(1) & 0xFF == ord('c'):
-            # - -  Get a frame from the video feed - -
-            isTrue, img = vid.read()
-            img = testimg1
+        elif pressed_key & 0xFF == ord('n'):
+            cv2.destroyWindow('image')
 
-            # - - Detect cards in the frame - -
-            img, cards = carddetection.processing(img)
-            
-            # - - Place detected cards into columns - - 
-            cards_in_sections = solitairesections.place_cards(img, cards)
-            cards_in_sections = card_adapter(cards_in_sections)
+            ### - - - INPUT FOR FIXING CARDS - - -
 
+            print("Enter the number of cards you are fixing: ")
+            n_cards = int(input())
+            for i in range(n_cards):
+                print("Enter name of the incorrect card followed by name of the correct card: eg. KH KD")
+                console_input = input()
+                entered_correction = console_input.split()
+
+                fix_card(entered_correction[0], entered_correction[1], cards)
+            img = original_img
+            for c in cards:
+                carddetection.draw_results(img, c)
+
+            #img = solitairesections.draw_sections_on_image(img)
+            cv2.imshow('image', img)
+            print("Press Y for move suggestion")
+            pressed_key = cv2.waitKey(-1)
+
+        if pressed_key & 0xFF == ord('y'):
             # - - Send the cards to the game logic - - 
             game_state.load_with_cards(cards_in_sections)
 
             # - - print the current board state - - 
             game_state.print_board()
 
-            # Display the image
-            img = solitairesections.draw_sections_on_image(img)
-            cv2.imshow('image', img)
+            #game_state.getsuggestedmove()
+            print("Draw a card from the deck")
+            print("*************************")
+            print()
 
+        
+        print("Press any key to take a new picture")
+        cv2.waitKey(-1)
+        
+        
+            
 
-
-
-            #### - - - INPUT FOR FIXING CARDS - - -
-            # console_input = input()
-            # if console_input[0] == 'y':
-            #     pass
-            # elif console_input[0] == 'n':
-            #     entered_correction = input().split()
-            #     fix_card(entered_correction[0], entered_correction[1], cards)
-            # else:
-            #     print("invalid input")
+print("OUT OF LOOP")
 
 vid.release()
-cv2.destroyAllWindows()
+
 
 
 
