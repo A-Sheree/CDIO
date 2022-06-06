@@ -114,7 +114,8 @@ if __name__ == "__main__":
 
         if pressed_key & 0xFF == ord('y'):
             # - - Send the cards to the game logic - - 
-            game_state.load_with_cards(cards_in_sections)
+            SolitaireBoard.identify_cards(cards_in_sections)
+            #game_state.load_with_cards(cards_in_sections)
 
             # - - print the current board state - - 
             game_state.print_board()

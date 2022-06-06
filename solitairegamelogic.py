@@ -227,6 +227,22 @@ class SolitaireBoard():
     def execute_current_move():
         SolitaireBoard.current_move.execute_move()
 
+    def identify_cards(cards):
+        identified_deck, identified_waste, identified_foundations, identified_columns = cards
+        if SolitaireBoard.waste and SolitaireBoard.waste[-1].hidden:
+            SolitaireBoard.waste[-1].hidden = False
+            SolitaireBoard.waste[-1].rank = identified_waste[-1].rank
+            SolitaireBoard.waste[-1].suit = identified_waste[-1].suit
+
+        col_index = 0
+        for col in SolitaireBoard.columns:
+            if col and col[-1].hidden:
+                col[-1].hidden = False
+                col[-1].rank = identified_columns[col_index][-1].rank
+                col[-1].suit = identified_columns[col_index][-1].suit
+            col_index += 1
+
+
     def reveal_card():
         if SolitaireBoard.waste:
             SolitaireBoard.waste[-1].hidden = False
