@@ -470,18 +470,45 @@ class SolitaireBoard():
         return "TURN A CARD FROM THE DECK"
 
     def new_suggest():
+        # Check for Ace og 2'er.
         for f in SolitaireBoard.foundations:
             if len(f) == 0:
                 res = SolitaireBoard.look_for_ace()
                 if len(res) > 0:
                     SolitaireBoard.current_move = ToFoundationMove(res, f)
                     return "MOVE " + str(res[-1]) + " TO A FOUNDATION"
-                else:
-                    if len(f) == 1:
-                        res = SolitaireBoard.look_for_deuce()
-                        if len(res) > 0 and Card(f[-1].suit):
-                            SolitaireBoard.current_move = ToFoundationMove(res, f)
-                            return "MOVE " + str(res[-1]) + " TO A FOUNDATION"
+            if len(f) == 1:
+                res = SolitaireBoard.look_for_deuce()
+                if len(res) > 0 and Card(f[-1].suit) in res:
+                    SolitaireBoard.current_move = ToFoundationMove(res, f)
+                    return "MOVE " + str(res[-1]) + " TO A FOUNDATION"
+
+                    # check med Tobias om dette er rigtigt kaldt eller om vi misser noget?
+
+    # Gør altid træk der tillader at vende et kort.
+
+    # Altid lav det træk der åbner for den største bunke med kort at vende.
+
+    # Flyt kun fra kolonne til kolonne hvis det tillader at få vendt et kort eller at lave kolonnerne smooth.
+
+    # Ryd ikke et spot med mindre der en konge der klar til at tage spottet.
+
+    # Kun spil en konge hvis kolonnerne med den største bunke af kort der kan vendes
+    # eller at spille en anden konge tillader at rykke at rykke fra en kolonne derpå ig vende et kort.
+
+    # Kun byg videre på foundation fra 3+ hvis det ikke påvirke det næste kort beskyttelse
+    # eller at det et træk der tillader at lave et spil eller ryk frigør at vende et kort
+    # ellers så skal det åbne muligheden for at overføre en bunke af samme farve mønster så der kan vendes et kort
+    # eller så frigøre et spot til en konge der venter.
+
+    # Flyt eller ryk kun en 5'er-8'er hvis det tillader at vende et kort med det samme
+    # det er smooth med det næste kort I kolonnen
+    # der er ikke blevet rykket andre kort til den kolonnen
+    # hvis der bare ikke er andre muligheder.
+
+    # alle dine nødvendige kort ser ud til at være i bunkerne som skal vendes
+    # flyt straks alle kort som kan op I foundation for måske at kunne åbne
+    # for muligheden at lave et træk med et andet kort der allerede findes men er blokeret.
     def look_for_ace():
         # check waste
         if len(SolitaireBoard.waste) > 0 and SolitaireBoard.waste[-1].rank == 1:
