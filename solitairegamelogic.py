@@ -224,8 +224,34 @@ class SolitaireBoard():
                 SolitaireBoard.columns[i].append(e)
             SolitaireBoard.columns[i][-1].hidden = False
 
-    def execute_current_move():
-        SolitaireBoard.current_move.execute_move()
+        #count hidden cards in each column and return a number of hidden cards for each column
+    def count_hiddencards():
+        hiddencolumn = []
+        # count hidden cards in each column and return a number of hidden cards for each column
+        hidden_cards = 0
+        for col in SolitaireBoard.columns:
+            for card in col:
+                if card.hidden:
+                    hidden_cards += 1
+                else:
+                    break
+            hiddencolumn.append(hidden_cards)
+            print(hiddencolumn[hidden_cards])
+            hidden_cards = 0
+        return hiddencolumn
+    # sort columns from most hidden cards to least hidden cards
+    def sorted_hiddencolumn():
+        temp_list = SolitaireBoard.count_hiddencards()
+        sorted = []
+        for i in range(7):
+            sorted.append(temp_list.index(max(temp_list)))
+            temp_list.pop(max(temp_list))
+        return sorted
+
+
+
+
+
 
     def identify_cards(cards):
         identified_deck, identified_waste, identified_foundations, identified_columns = cards
@@ -443,7 +469,19 @@ class SolitaireBoard():
         SolitaireBoard.current_move = DeckMove()
         return "TURN A CARD FROM THE DECK"
 
-
+    def new_suggest():
+        for f in SolitaireBoard.foundations:
+            if len(f) == 0:
+                res = SolitaireBoard.look_for_ace()
+                if len(res) > 0:
+                    SolitaireBoard.current_move = ToFoundationMove(res, f)
+                    return "MOVE " + str(res[-1]) + " TO A FOUNDATION"
+                else:
+                    if len(f) == 1:
+                        res = SolitaireBoard.look_for_deuce()
+                        if len(res) > 0 and Card(f[-1].suit):
+                            SolitaireBoard.current_move = ToFoundationMove(res, f)
+                            return "MOVE " + str(res[-1]) + " TO A FOUNDATION"
     def look_for_ace():
         # check waste
         if len(SolitaireBoard.waste) > 0 and SolitaireBoard.waste[-1].rank == 1:
@@ -452,7 +490,15 @@ class SolitaireBoard():
             if len(col) > 0 and col[-1].rank == 1:
                 return col
         return []
-        
+    def look_for_deuce():
+        # check waste
+        if len(SolitaireBoard.waste) > 0 and SolitaireBoard.waste[-1].rank == 2:
+                return SolitaireBoard.waste
+        for col in SolitaireBoard.columns:
+            if len(col) > 0 and col[-1].rank == 2:
+                return col
+        return []
+
     def look_for_card_in_columns(card):
         for col in SolitaireBoard.columns:
             if len(col) > 0 and col[-1].rank == card.rank and col[-1].suit == card.suit:
