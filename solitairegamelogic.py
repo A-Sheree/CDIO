@@ -478,8 +478,9 @@ class SolitaireBoard():
                     SolitaireBoard.current_move = ToFoundationMove(res, f)
                     return "MOVE " + str(res[-1]) + " TO A FOUNDATION"
             if len(f) == 1:
-                res = SolitaireBoard.look_for_deuce()
-                if len(res) > 0 and Card(f[-1].suit) in res:
+                temp_card = Card(f[-1].suit)
+                res = SolitaireBoard.look_for_deuce(temp_card)
+                if len(res) > 0:
                     SolitaireBoard.current_move = ToFoundationMove(res, f)
                     return "MOVE " + str(res[-1]) + " TO A FOUNDATION"
 
@@ -517,12 +518,12 @@ class SolitaireBoard():
             if len(col) > 0 and col[-1].rank == 1:
                 return col
         return []
-    def look_for_deuce():
+    def look_for_deuce(card):
         # check waste
-        if len(SolitaireBoard.waste) > 0 and SolitaireBoard.waste[-1].rank == 2:
+        if len(SolitaireBoard.waste) > 0 and SolitaireBoard.waste[-1].rank == 2 and SolitaireBoard.waste[-1].suit == card.suit:
                 return SolitaireBoard.waste
         for col in SolitaireBoard.columns:
-            if len(col) > 0 and col[-1].rank == 2:
+            if len(col) > 0 and col[-1].rank == 2 and col[-1].suit == card.suit:
                 return col
         return []
 
