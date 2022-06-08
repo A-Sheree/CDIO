@@ -398,7 +398,7 @@ class SolitaireBoard():
                 while((height+1) < len(col) and not col[-(height+1)].hidden):
                     height += 1
                 temp_card = Card(rank=col[-height].rank + 1, suit=col[-height].suit)
-                if temp_card.rank == 14: # look for empty column
+                if temp_card.rank == 14 and temp_card: # look for empty column
                     for res in SolitaireBoard.columns:
                         if len(res) == 0:
                             SolitaireBoard.current_move = ColToColMove(col, res, height)
@@ -484,6 +484,8 @@ class SolitaireBoard():
                     SolitaireBoard.current_move = ToFoundationMove(res, f)
                     return "MOVE " + str(res[-1]) + " TO A FOUNDATION"
 
+
+
                     # check med Tobias om dette er rigtigt kaldt eller om vi misser noget?
 
     # Gør altid træk der tillader at vende et kort.
@@ -530,6 +532,66 @@ class SolitaireBoard():
                             return "MOVE TO " + str(res[-1])
                     else:
                         raise ValueError
+
+
+        # move from column to foundation
+        for i in order:
+            col = SolitaireBoard.columns[i]
+            Card_to_move = col[len(col) - 1]
+            for f in SolitaireBoard.foundations:
+                if len(f) > 0:
+                    if f[-1].rank == Card_to_move.rank - 1 and Card_to_move.suit == f[-1].suit:
+                        SolitaireBoard.current_move = ToFoundationMove(i, f)
+                        return "MOVE " + str(f[-1]) + " TO A FOUNDATION"
+
+
+
+
+
+        # Tjek om et et kort fra talon kan flyttes fra talon ud på en kolonn
+        if SolitaireBoard.waste:
+            temp_card = Card(rank=SolitaireBoard.waste[-1].rank + 1, suit=SolitaireBoard.waste[-1].suit)
+            if temp_card.rank == 14: # look for empty column
+                for res in SolitaireBoard.columns:
+                    if len(res) == 0:
+                        SolitaireBoard.current_move = TalonToColMove(res)
+                        return "MOVE KING TO EMPTY COLUMN"
+            else:
+                if temp_card.suit == "H" or temp_card.suit == "D":
+                    temp_card.suit = "C"
+                    res = SolitaireBoard.look_for_card_in_columns(temp_card)
+                    if res:
+                        SolitaireBoard.current_move = TalonToColMove(res)
+                        return "MOVE TO " + str(res[-1])
+                    temp_card.suit = "S"
+                    res = SolitaireBoard.look_for_card_in_columns(temp_card)
+                    if res:
+                        SolitaireBoard.current_move = TalonToColMove(res)
+                        return "MOVE TO " + str(res[-1])
+                elif temp_card.suit == "C" or temp_card.suit == "S":
+                    temp_card.suit = "H"
+                    res = SolitaireBoard.look_for_card_in_columns(temp_card)
+                    if res:
+                        SolitaireBoard.current_move = TalonToColMove(res)
+                        return "MOVE TO " + str(res[-1])
+                    temp_card.suit = "D"
+                    res = SolitaireBoard.look_for_card_in_columns(temp_card)
+                    if res:
+                        SolitaireBoard.current_move = TalonToColMove(res)
+                        return "MOVE TO " + str(res[-1])
+                else:
+                    raise ValueError
+
+
+        # from waste to foundation
+        if SolitaireBoard.waste:
+            Card_to_move = SolitaireBoard.waste[-1]
+            for f in SolitaireBoard.foundations:
+                if len(f) > 0:
+                    if f[-1].rank == Card_to_move.rank - 1 and Card_to_move.suit == f[-1].suit:
+                        SolitaireBoard.current_move = ToFoundationMove(Card_to_move, f)
+                        return "MOVE " + str(Card_to_move) + " TO A FOUNDATION"
+
 
     # Flyt kun fra kolonne til kolonne hvis det tillader at få vendt et kort eller at lave kolonnerne smooth.
 
