@@ -236,8 +236,8 @@ class SolitaireBoard():
                 else:
                     break
             hiddencolumn.append(hidden_cards)
-            print(hiddencolumn[hidden_cards])
             hidden_cards = 0
+        print(hiddencolumn)
         return hiddencolumn
     # sort columns from most hidden cards to least hidden cards
     def sorted_hiddencolumn():
@@ -490,6 +490,47 @@ class SolitaireBoard():
 
     # Altid lav det træk der åbner for den største bunke med kort at vende.
 
+        order = SolitaireBoard.sorted_hiddencolumn()
+        k = -1
+        for i in order:
+            col = SolitaireBoard.columns[i]
+            k += 1
+            if col:
+                height = 1
+                while ((height + 1) < len(col) and not col[-(height + 1)].hidden):
+                    height += 1
+                temp_card = Card(rank=col[-height].rank + 1, suit=col[-height].suit)
+                if temp_card.rank == 14: # look for empty column
+                    for res in SolitaireBoard.columns:
+                        if len(res) == 0:
+                            SolitaireBoard.current_move = ColToColMove(col, res, height)
+                            return "MOVE KING TO EMPTY COLUMN"
+                else:
+                    if temp_card.suit == "H" or temp_card.suit == "D":
+                        temp_card.suit = "C"
+                        res = SolitaireBoard.look_for_card_in_columns(temp_card)
+                        if res:
+                            SolitaireBoard.current_move = ColToColMove(col, res, height)
+                            return "MOVE TO " + str(res[-1])
+                        temp_card.suit = "S"
+                        res = SolitaireBoard.look_for_card_in_columns(temp_card)
+                        if res:
+                            SolitaireBoard.current_move = ColToColMove(col, res, height)
+                            return "MOVE TO " + str(res[-1])
+                    elif temp_card.suit == "C" or temp_card.suit == "S":
+                        temp_card.suit = "H"
+                        res = SolitaireBoard.look_for_card_in_columns(temp_card)
+                        if res:
+                            SolitaireBoard.current_move = ColToColMove(col, res, height)
+                            return "MOVE TO " + str(res[-1])
+                        temp_card.suit = "D"
+                        res = SolitaireBoard.look_for_card_in_columns(temp_card)
+                        if res:
+                            SolitaireBoard.current_move = ColToColMove(col, res, height)
+                            return "MOVE TO " + str(res[-1])
+                    else:
+                        raise ValueError
+
     # Flyt kun fra kolonne til kolonne hvis det tillader at få vendt et kort eller at lave kolonnerne smooth.
 
     # Ryd ikke et spot med mindre der en konge der klar til at tage spottet.
@@ -510,6 +551,10 @@ class SolitaireBoard():
     # alle dine nødvendige kort ser ud til at være i bunkerne som skal vendes
     # flyt straks alle kort som kan op I foundation for måske at kunne åbne
     # for muligheden at lave et træk med et andet kort der allerede findes men er blokeret.
+
+        SolitaireBoard.current_move = DeckMove()
+        return "TURN A CARD FROM THE DECK"
+
     def look_for_ace():
         # check waste
         if len(SolitaireBoard.waste) > 0 and SolitaireBoard.waste[-1].rank == 1:
@@ -568,12 +613,12 @@ if __name__ == "__main__":
         board.print_board()
         print()
         print()
-        print(SolitaireBoard.suggest_move())
-        SolitaireBoard.execute_current_move()
+        print(SolitaireBoard.new_suggest())
+        SolitaireBoard.current_move.execute_move()
         SolitaireBoard.reveal_card()
 
         k += 1
-        if k == 10: #kør 10 træk ad gangen så man ikke skal taste så meget
+        if k == 1: #kør 10 træk ad gangen så man ikke skal taste så meget
             k = 0
             print("Continue..")
             user_input = input()
