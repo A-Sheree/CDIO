@@ -379,21 +379,21 @@ class SolitaireBoard():
                                     SolitaireBoard.current_move = TalonToColMove(res)
                                     return
 
-    # Flyt kun fra kolonne til kolonne hvis det tillader at få vendt et kort eller at lave kolonnerne smooth.
+    #[ ] Flyt kun fra kolonne til kolonne hvis det tillader at få vendt et kort eller at lave kolonnerne smooth.
 
-    # Ryd ikke et spot med mindre der en konge der klar til at tage spottet.
+    #[ ] Ryd ikke et spot med mindre der en konge der klar til at tage spottet.
 
-    # Kun spil en konge hvis kolonnerne med den største bunke af kort der kan vendes
-    # eller at spille en anden konge tillader at rykke at rykke fra en kolonne derpå ig vende et kort.
+    #[ ] Kun spil en konge hvis kolonnerne med den største bunke af kort der kan vendes
+    #[ ] eller at spille en anden konge tillader at rykke at rykke fra en kolonne derpå ig vende et kort.
 
-    # Kun byg videre på foundation fra 3+ hvis det ikke påvirke det næste kort beskyttelse
-    # eller at det et træk der tillader at lave et spil eller ryk frigør at vende et kort
-    # ellers så skal det åbne muligheden for at overføre en bunke af samme farve mønster så der kan vendes et kort
-    # eller så frigøre et spot til en konge der venter.
+    #[✔] Kun byg videre på foundation fra 3+ hvis det ikke påvirke det næste kort beskyttelse 
+    #[✔] eller at det et træk der tillader at lave et spil eller ryk frigør at vende et kort     
+    #[?] ellers så skal det åbne muligheden for at overføre en bunke af samme farve mønster så der kan vendes et kort
+    #[?] eller så frigøre et spot til en konge der venter.
 
-    # Flyt eller ryk kun en 5'er-8'er hvis det tillader at vende et kort med det samme
-    # det er smooth med det næste kort I kolonnen
-    # der er ikke blevet rykket andre kort til den kolonnen
+    #[✔] Flyt eller ryk kun en 5'er-8'er hvis det tillader at vende et kort med det samme
+    #[X] det er smooth med det næste kort I kolonnen
+    #[?] der er ikke blevet rykket andre kort til den kolonnen
     # hvis der bare ikke er andre muligheder.
 
     # alle dine nødvendige kort ser ud til at være i bunkerne som skal vendes
@@ -401,31 +401,31 @@ class SolitaireBoard():
     # for muligheden at lave et træk med et andet kort der allerede findes men er blokeret.
 
         # Tjek om et et kort fra talon kan flyttes fra talon ud på en kolonne
-        if SolitaireBoard.waste:
-            temp_card = Card(rank=SolitaireBoard.waste[-1].rank, suit=SolitaireBoard.waste[-1].suit)
-            if temp_card.rank < 5 or (temp_card.rank > 8 and temp_card.rank < 13):
-                
-                for col in SolitaireBoard.columns:
-                    res = SolitaireBoard.look_for_column_destinatination(temp_card)
-                    if res:
-                        SolitaireBoard.current_move = TalonToColMove(res)
-                        return
-
-    #...
-        if SolitaireBoard.move_count > 10: #start moving cards to foundation
-            for col in SolitaireBoard.columns:
-                if col:
-                    res = SolitaireBoard.look_for_foundation_destination(col[-1])
-                    if res:
-                        if SolitaireBoard.next_card_protected(col[-1]):
-                           SolitaireBoard.current_move = ToFoundationMove(col, res)
-                           return
+        if SolitaireBoard.move_count > 50:
             if SolitaireBoard.waste:
-                res = SolitaireBoard.look_for_foundation_destination(SolitaireBoard.waste[-1])
+                temp_card = Card(rank=SolitaireBoard.waste[-1].rank, suit=SolitaireBoard.waste[-1].suit)
+                if temp_card.rank < 5 or (temp_card.rank > 8 and temp_card.rank < 13):
+                    
+                    for col in SolitaireBoard.columns:
+                        res = SolitaireBoard.look_for_column_destinatination(temp_card)
+                        if res:
+                            SolitaireBoard.current_move = TalonToColMove(res)
+                            return
+
+        # Flyt kort til foundation hvis de er next-card-protected
+        for col in SolitaireBoard.columns:
+            if col:
+                res = SolitaireBoard.look_for_foundation_destination(col[-1])
                 if res:
-                    if SolitaireBoard.next_card_protected(SolitaireBoard.waste[-1]):
-                       SolitaireBoard.current_move = ToFoundationMove(SolitaireBoard.waste, res)
-                       return
+                    if SolitaireBoard.next_card_protected(col[-1]):
+                        SolitaireBoard.current_move = ToFoundationMove(col, res)
+                        return
+        if SolitaireBoard.waste:
+            res = SolitaireBoard.look_for_foundation_destination(SolitaireBoard.waste[-1])
+            if res:
+                if SolitaireBoard.next_card_protected(SolitaireBoard.waste[-1]):
+                    SolitaireBoard.current_move = ToFoundationMove(SolitaireBoard.waste, res)
+                    return
 
         if SolitaireBoard.move_count > 160: #start moving all ranks from talon to columns
             if SolitaireBoard.waste:
@@ -458,7 +458,7 @@ class SolitaireBoard():
                         return
 
 
-        if SolitaireBoard.move_count > 920: # begynd at flytte kort til foundation
+        if SolitaireBoard.move_count > 200: # begynd at flytte kort til foundation
             if SolitaireBoard.waste:
                 temp_card = Card(rank=SolitaireBoard.waste[-1].rank, suit=SolitaireBoard.waste[-1].suit)     
                 res = SolitaireBoard.look_for_foundation_destination(temp_card)
@@ -633,6 +633,8 @@ def simulate_games(n_games, move_limit):
             SolitaireBoard.reveal_card()
             moves += 1
 
+            if SolitaireBoard.current_move.move_type == MoveType.NOMOVE:
+                break
             temp = True
             for f in SolitaireBoard.foundations:
                 temp = temp and len(f) == 13
@@ -648,7 +650,7 @@ if __name__ == "__main__":
     GAMEMODE = 1 
     
     if GAMEMODE == 1:
-        NGAMES = 1000
+        NGAMES = 100
         MOVELIMIT = 400
         print("Simulating " + str(NGAMES) + " solitaires")
         result = simulate_games(NGAMES, MOVELIMIT)
@@ -700,7 +702,7 @@ if __name__ == "__main__":
                 print("***************************")
                 break                
 
-            if SolitaireBoard.move_count > 500:
+            if SolitaireBoard.move_count > 500 or SolitaireBoard.current_move.move_type == MoveType.NOMOVE:
                 print("@@@@@@@@@@@@@@@@@@@@@@@@@@")
                 print("Q_Q Q_Q Q_Q Q_Q Q_Q Q_Q")
                 print("KUNNE IKKE FINDE EN LØSNING")
