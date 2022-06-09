@@ -201,6 +201,7 @@ class SolitaireBoard():
     foundations = [[], [], [], []]
     columns = [[], [], [], [], [], [], []]
     current_move = NoMoveMove()
+    move_count = 0
 
     def create_deck():
         SolitaireBoard.deck = []
@@ -215,6 +216,7 @@ class SolitaireBoard():
         return
 
     def new_game():
+        SolitaireBoard.move_count = 0
         SolitaireBoard.deck = []
         SolitaireBoard.columns = [[], [], [], [], [], [], []]
         SolitaireBoard.foundations = [[], [], [], []]
@@ -339,8 +341,7 @@ class SolitaireBoard():
                 while col[index - 1].hidden == False:
                     index -= 1
 
-                # lav en midlertidig kopi af kortet
-                temp_card = Card(rank=col[index].rank, suit=col[index].suit)
+                temp_card = col[index] #Card(rank=col[index].rank, suit=col[index].suit)
 
                 # Frigør ved at flytte et kort til foundation
                 if index == -1: 
@@ -410,7 +411,7 @@ class SolitaireBoard():
                         return
 
     #...
-        if SolitaireMove.move_number > 80: #start moving cards to foundation
+        if SolitaireBoard.move_count > 80: #start moving cards to foundation
             for col in SolitaireBoard.columns:
                 if col:
                     res = SolitaireBoard.look_for_foundation_destination(col[-1])
@@ -423,7 +424,7 @@ class SolitaireBoard():
                     SolitaireBoard.current_move = ToFoundationMove(SolitaireBoard.waste, res)
                     return
 
-        if SolitaireMove.move_number > 100: #start moving all ranks from talon to columns
+        if SolitaireBoard.move_count > 160: #start moving all ranks from talon to columns
             if SolitaireBoard.waste:
                 temp_card = Card(rank=SolitaireBoard.waste[-1].rank, suit=SolitaireBoard.waste[-1].suit)     
                 if temp_card.rank == 13: # find tom kolonne
@@ -438,13 +439,39 @@ class SolitaireBoard():
                             SolitaireBoard.current_move = TalonToColMove(res)
                             return
 
-        if SolitaireMove.move_number > 110: #start moving directly from waste to foundation
+        if SolitaireBoard.move_count > 110: #start moving directly from waste to foundation
             if SolitaireBoard.waste:
                 temp_card = Card(rank=SolitaireBoard.waste[-1].rank, suit=SolitaireBoard.waste[-1].suit)     
                 res = SolitaireBoard.look_for_foundation_destination(temp_card)
                 if res:
                     SolitaireBoard.current_move = ToFoundationMove(col, res)
                     return
+
+        if SolitaireBoard.move_count > 130: # begynd at lægge kolonner sammen
+            for col in SolitaireBoard.columns:
+                if col and col[0].hidden: # indeholder et skjult kort
+                    # Find det øverste synlige kort i kolonnen
+                    index = -1
+                    while col[index - 1].hidden == False:
+                        index -= 1
+                    if abs(index) == len(col):
+                        pass
+                    temp_card = col[index]
+                    res = SolitaireBoard.look_for_column_destinatination(temp_card)
+                    if res:
+                        SolitaireBoard.current_move = ColToColMove(col, res, abs(index))
+                        return
+
+
+        if SolitaireBoard.move_count > 120: # begynd at flytte kort til foundation
+            if SolitaireBoard.waste:
+                temp_card = Card(rank=SolitaireBoard.waste[-1].rank, suit=SolitaireBoard.waste[-1].suit)     
+                res = SolitaireBoard.look_for_foundation_destination(temp_card)
+                if res:
+                    SolitaireBoard.current_move = ToFoundationMove(col, res)
+                    return
+               
+
         # ellers, vend et kort fra bunken
         if len(SolitaireBoard.deck) + len(SolitaireBoard.waste) > 0:
             SolitaireBoard.current_move = DeckMove()
@@ -547,6 +574,7 @@ def simulate_games(n_games, move_limit):
 
             SolitaireBoard.new_suggest()
             SolitaireBoard.current_move.execute_move()
+            SolitaireBoard.move_count += 1
             SolitaireBoard.reveal_card()
             moves += 1
 
@@ -566,7 +594,7 @@ if __name__ == "__main__":
     
     if GAMEMODE == 1:
         NGAMES = 20
-        MOVELIMIT = 350
+        MOVELIMIT = 400
         print("Simulating " + str(NGAMES) + " solitaires")
         result = simulate_games(NGAMES, MOVELIMIT)
         print(str(result) + " of " + str(NGAMES) + " where solved.")
@@ -579,16 +607,14 @@ if __name__ == "__main__":
         print("Enter any input to continue")
         user_input = input()
 
-        actualmoves = 0
-
         k = 0
         while True:
             SolitaireBoard.new_suggest()
             print(SolitaireBoard.current_move)
             SolitaireBoard.current_move.execute_move()
-            actualmoves += 1
+            SolitaireBoard.move_count += 1
             SolitaireBoard.reveal_card()
-            print("Actual move number: " + str(actualmoves))
+            print("Move number: " + str(SolitaireBoard.move_count))
             board.print_board()
 
             k += 1
@@ -619,7 +645,7 @@ if __name__ == "__main__":
                 print("***************************")
                 break                
 
-            if actualmoves > 500:
+            if SolitaireBoard.move_count > 500:
                 print("@@@@@@@@@@@@@@@@@@@@@@@@@@")
                 print("Q_Q Q_Q Q_Q Q_Q Q_Q Q_Q")
                 print("KUNNE IKKE FINDE EN LØSNING")
