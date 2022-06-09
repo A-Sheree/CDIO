@@ -4,6 +4,8 @@ import random
 import string
 from enum import Enum
 
+from cv2 import sort
+
 class Card():
     suit = "?"
     rank = 0
@@ -74,35 +76,14 @@ class Card():
             return "X" + self.suit
 
     def testprintcard(self):
-        if self.rank == 1:
-            return "A" + self.suit
-        elif self.rank == 2:
-            return "2" + self.suit
-        elif self.rank == 3:
-            return "3" + self.suit
-        elif self.rank == 4:
-            return "4" + self.suit
-        elif self.rank == 5:
-            return "5" + self.suit
-        elif self.rank == 6:
-            return "6" + self.suit
-        elif self.rank == 7:
-            return "7" + self.suit
-        elif self.rank == 8:
-            return "8" + self.suit
-        elif self.rank == 9:
-            return "9" + self.suit
-        elif self.rank == 10:
-            return "T" + self.suit
-        elif self.rank == 11:
-            return "J" + self.suit
-        elif self.rank == 12:
-            return "Q" + self.suit
-        elif self.rank == 13:
-            return "K" + self.suit
+        
+        if self.hidden:
+            self.hidden = False
+            temp = self.__str__()
+            self.hidden = True
+            return temp
         else:
-            return "X" + self.suit
-
+            return self.__str__()
 
 class MoveType(Enum):
     SETUP = 1
@@ -221,41 +202,6 @@ class SolitaireBoard():
     columns = [[], [], [], [], [], [], []]
     current_move = NoMoveMove()
 
-    #### NONE OF THESE SHOULD ACTUALLY BE USED
-    #### ALL CARDS SHOULD BE GENERATED AS PLACEHOLDER CARDS AT THE START
-    #### AND THEN UPDATED WITH CORRECT SUIT AND RANK AS THEY ARE REVEALED
-    def append_to_deck(self, cards):
-        for c in cards:
-            self.deck.append(c)
-    def append_to_waste(self, cards):
-        for c in cards:
-            self.waste.append(c)
-    def append_to_foundations(self, cards):
-        if len(cards) == len(self.foundations):
-            x = 0
-            for f in cards:
-                for c in f:
-                    self.foundations[x].append(c)
-                x += 1
-    def append_to_columns(self, cards):
-        if len(cards) == len(self.columns):
-            x = 0
-            for col in cards:
-                for c in col:
-                    self.columns[x].append(c)
-                x += 1
-    ####-----------------------------------------
-    ####-----------------------------------------
-    
-    # THIS NEEDS UPDATING TOO
-    def load_with_cards(self, cards):
-        if len(cards) == 4:
-            self.append_to_deck(cards[0])
-            self.append_to_waste(cards[1])
-            self.append_to_foundations(cards[2])
-            self.append_to_columns(cards[3])
-
-
     def create_deck():
         SolitaireBoard.deck = []
         for x in range(1, 14, 1):
@@ -293,18 +239,16 @@ class SolitaireBoard():
                 else:
                     break
             hiddencolumn.append(hidden_cards)
-            print(hiddencolumn[hidden_cards])
+            #print(hiddencolumn[hidden_cards])
             hidden_cards = 0
         return hiddencolumn
     # sort columns from most hidden cards to least hidden cards
     def sorted_hiddencolumn():
         temp_list = SolitaireBoard.count_hiddencards()
-        sorted = []
+        index_list = []
         for i in range(7):
-            sorted.append(temp_list.index(max(temp_list)))
-            temp_list.pop(max(temp_list))
-        return sorted
-
+            index_list.append(i)
+        return [x for _,x in sorted(zip(temp_list, index_list), reverse=True)]
 
 
     def identify_cards(cards):
@@ -329,73 +273,6 @@ class SolitaireBoard():
         for col in SolitaireBoard.columns:
             if col:
                 col[-1].hidden = False
-
-
-    #def draw_from_deck(self):
-    #    move = DeckMove()
-    #    move.execute_move()
-
-    """         
-        if len(self.deck) > 0:
-            card = self.deck.pop()
-            card.hidden = False
-            self.waste.append(card)
-        elif len(self.deck) == 0 and len(self.waste) > 0:
-            self.deck = self.waste[:]
-            self.deck.reverse()
-            self.waste = []
-            for c in self.deck:
-                c.hidden = True  """
-
-    def valid_to_col_move(card, dest_column):
-        if len(dest_column) == 0:
-            return card.rank == 13
-        else:
-            dest_card = dest_column[-1]
-            valid_ranks = card.rank == dest_card.rank - 1
-            if card.suit == 'D' or card.suit == 'H':
-                valid_suit = dest_card.suit == 'C' or dest_card.suit == 'S'
-            elif card.suit == 'C' or card.suit == 'S':
-                valid_suit = dest_card.suit == 'D' or dest_card.suit == 'H'
-            else:
-                valid_suit = False
-            return valid_ranks and valid_suit
-
-    def move_to_col(from_column, to_column, number_of_cards):
-        if len(from_column) == 0 or number_of_cards < 0 or from_column == to_column or number_of_cards > len(from_column):
-            return
-        from_card = from_column[-number_of_cards]
-        if from_card.hidden:
-            return
-        if SolitaireBoard.valid_to_col_move(from_card, to_column):
-            move = ColToColMove(SolitaireBoard.columns[from_column], SolitaireBoard.columns[to_column], number_of_cards)
-            move.execute_move()
-
-            """ if number_of_cards == 0:
-                to_column.extend(to_column)
-                from_column[:] = []
-            else:
-                to_column.extend(from_column[-number_of_cards : ])
-                from_column[:] = from_column[ : -number_of_cards]
-                if len(from_column) > 0:
-                    from_column[-1].hidden = False """
-
-    def valid_to_foundation_move(card, dest_foundation):
-        if len(dest_foundation) == 0:
-            return card.rank == 1
-        else:
-            dest_card = dest_foundation[-1]
-            return card.suit == dest_card.suit and card.rank == dest_card.rank + 1
-
-    def OLDmove_to_foundation(self, column, foundation):
-        if len(column) == 0:
-            return
-
-        card = column[-1]
-        if self.valid_to_foundation_move(card, foundation):
-            foundation.append(column.pop())
-            if len(column) > 0:
-                column[-1].hidden = False
 
     def print_board(self):
         if len(self.deck) == 0:
@@ -452,8 +329,10 @@ class SolitaireBoard():
                     # check med Tobias om dette er rigtigt kaldt eller om vi misser noget?
 
         # Gør altid træk der tillader at vende et kort.
-        
-        for col in SolitaireBoard.columns:
+        # Altid lav det træk der åbner for den største bunke med kort at vende.
+        sorted_columns = SolitaireBoard.sorted_hiddencolumn()
+        for i in sorted_columns:
+            col = SolitaireBoard.columns[i]
             if col and col[0].hidden: # indeholder et skjult kort
                 # Find det øverste synlige kort i kolonnen
                 index = -1
@@ -487,7 +366,7 @@ class SolitaireBoard():
                         res = SolitaireBoard.look_for_talon_destination(temp_card)
                         if res:
                             talon_card = SolitaireBoard.waste[-1]
-                            if talon_card.rank == 13: #look for empty column
+                            if talon_card.rank == 13: # find tom kolonne
                                 temp_move = SolitaireBoard.make_way_for_the_king(SolitaireBoard.waste, -1)
                                 if temp_move.move_type != MoveType.NOMOVE:
                                     SolitaireBoard.current_move = temp_move
@@ -498,7 +377,7 @@ class SolitaireBoard():
                                     SolitaireBoard.current_move = TalonToColMove(res)
                                     return
 
-    # Altid lav det træk der åbner for den største bunke med kort at vende.
+    
 
     # Flyt kun fra kolonne til kolonne hvis det tillader at få vendt et kort eller at lave kolonnerne smooth.
 
@@ -535,7 +414,6 @@ class SolitaireBoard():
                         SolitaireBoard.current_move = TalonToColMove(res)
                         return
 
-
     #...
         if SolitaireMove.move_number > 80: #start moving cards to foundation
             for col in SolitaireBoard.columns:
@@ -553,7 +431,7 @@ class SolitaireBoard():
         if SolitaireMove.move_number > 100: #start moving all ranks from talon to columns
             if SolitaireBoard.waste:
                 temp_card = Card(rank=SolitaireBoard.waste[-1].rank, suit=SolitaireBoard.waste[-1].suit)     
-                if temp_card.rank == 13: # look for empty column
+                if temp_card.rank == 13: # find tom kolonne
                     temp_move = SolitaireBoard.make_way_for_the_king(SolitaireBoard.waste, -1)
                     if temp_move.move_type != MoveType.NOMOVE:
                         SolitaireBoard.current_move = temp_move
@@ -619,11 +497,10 @@ class SolitaireBoard():
         else:
             return []    
 
-    def look_for_foundation_destination(original_card):
-        card_to_find = Card(rank=original_card.rank-1, suit=original_card.suit)
+    def look_for_foundation_destination(card_to_move):
         for f in SolitaireBoard.foundations:
             if f:
-                if f[-1].rank == card_to_find.rank and f[-1].suit == card_to_find.suit:
+                if f[-1].rank == card_to_move.rank - 1 and card_to_move.suit == f[-1].suit:
                     return f
         return []
 
@@ -649,15 +526,6 @@ class SolitaireBoard():
                 return res
         return []
 
-
-    def look_for_card(card):
-        if len(SolitaireBoard.waste) > 0 and SolitaireBoard.waste[-1].rank == card.rank and SolitaireBoard.waste[-1].suit == card.suit:
-                return SolitaireBoard.waste
-        for col in SolitaireBoard.columns:
-            if len(col) > 0 and col[-1].rank == card.rank and col[-1].suit == card.suit:
-                return col
-        return []
-
     def make_way_for_the_king(king_col, negative_index):
         # led efter en tom plads til kongen
         for res in SolitaireBoard.columns:
@@ -671,19 +539,7 @@ class SolitaireBoard():
                     return ColToColMove(temp_col, res, len(temp_col))
         return NoMoveMove()
 
-
-
 # -----------------
-
-
-
-
-def debugprintstate(board):
-    print("**************************")
-    print("Actual move number: " + str(actualmoves))
-    print("**************************")
-
-    board.print_board()
 
 def simulate_games(n_games, move_limit):
     sum = 0
@@ -707,76 +563,70 @@ def simulate_games(n_games, move_limit):
     return sum
 
 if __name__ == "__main__":
-    NGAMES = 100
-    MOVELIMIT = 500
-    print("Simulating " + str(NGAMES) + " solitaires")
-    result = simulate_games(NGAMES, MOVELIMIT)
-    print(str(result) + " of " + str(NGAMES) + " where solved.")
+    # GAMEMODE:
+    # 1: simuler mange spil
+    # 2: step-by-step gennem et spil
+    GAMEMODE = 1 
 
+    if GAMEMODE == 1:
+        NGAMES = 20
+        MOVELIMIT = 350
+        print("Simulating " + str(NGAMES) + " solitaires")
+        result = simulate_games(NGAMES, MOVELIMIT)
+        print(str(result) + " of " + str(NGAMES) + " where solved.")
+    elif GAMEMODE == 2:
+        board = SolitaireBoard()
+        SolitaireBoard.create_deck()
+        SolitaireBoard.shuffle_deck()
+        SolitaireBoard.new_game()
+        print("Game is in auto solve mode..")
+        print("Enter any input to continue")
+        user_input = input()
 
-if __name__ != "__main__":
-    board = SolitaireBoard()
-    SolitaireBoard.create_deck()
-    SolitaireBoard.shuffle_deck()
-    SolitaireBoard.new_game()
-    print("Game is in auto solve mode..")
-    print("Enter any input to continue")
-    user_input = input()
+        actualmoves = 0
 
-    actualmoves = 0
-
-    k = 0
-    while True:
-
-        SolitaireBoard.new_suggest()
-        print(SolitaireBoard.current_move)
-        SolitaireBoard.current_move.execute_move()
-        actualmoves += 1
-        SolitaireBoard.reveal_card()
-        debugprintstate(board)                
-
-        k += 1
-        MOVESPERINPUT = 70
-        if k > MOVESPERINPUT: #kør flere træk ad gangen så man ikke skal taste så meget
-            k = 0
-            print("Continue..")
-            user_input = input()
-            if len(user_input) > 10:
-                break
-            elif len(user_input) > 3:
-                k = MOVESPERINPUT
-
-        # check om kabalen er løst
-        temp = True
-        for f in SolitaireBoard.foundations:
-            temp = temp and len(f) == 13
-        if temp:
-            print("***************************")
-            print("***************************")
-            print("SPILLET ER SLUT")
-            print("***************************")
-            print("***************************")
-
+        k = 0
+        while True:
+            SolitaireBoard.new_suggest()
+            print(SolitaireBoard.current_move)
+            SolitaireBoard.current_move.execute_move()
+            actualmoves += 1
+            SolitaireBoard.reveal_card()
+            print("Actual move number: " + str(actualmoves))
             board.print_board()
 
-            print("***************************")
-            print("***************************")
-            break                
+            k += 1
+            MOVESPERINPUT = 70
+            if k > MOVESPERINPUT: #kør flere træk ad gangen så man ikke skal taste så meget
+                k = 0
+                print("Continue..")
+                user_input = input()
+                if len(user_input) > 10:
+                    break
+                elif len(user_input) > 3:
+                    k = MOVESPERINPUT
 
-        if actualmoves > 500:
-            print("@@@@@@@@@@@@@@@@@@@@@@@@@@")
-            print("Q_Q Q_Q Q_Q Q_Q Q_Q Q_Q")
-            print("KUNNE IKKE FINDE EN LØSNING")
-            print("Q_Q Q_Q Q_Q Q_Q Q_Q Q_Q")
-            print("@@@@@@@@@@@@@@@@@@@@@@@@@@")
-            break
+            # check om kabalen er løst
+            temp = True
+            for f in SolitaireBoard.foundations:
+                temp = temp and len(f) == 13
+            if temp:
+                print("***************************")
+                print("***************************")
+                print("SPILLET ER SLUT")
+                print("***************************")
+                print("***************************")
 
-if __name__ != "__main__":
-    board = SolitaireBoard()
-    SolitaireBoard.create_deck()
-    SolitaireBoard.shuffle_deck()
-    SolitaireBoard.new_game()
+                board.print_board()
 
-    print("************")
-    print(len(board.deck))
-    print(len(SolitaireBoard.deck))
+                print("***************************")
+                print("***************************")
+                break                
+
+            if actualmoves > 500:
+                print("@@@@@@@@@@@@@@@@@@@@@@@@@@")
+                print("Q_Q Q_Q Q_Q Q_Q Q_Q Q_Q")
+                print("KUNNE IKKE FINDE EN LØSNING")
+                print("Q_Q Q_Q Q_Q Q_Q Q_Q Q_Q")
+                print("@@@@@@@@@@@@@@@@@@@@@@@@@@")
+                break
