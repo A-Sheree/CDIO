@@ -212,7 +212,7 @@ class DeckMove(SolitaireMove):
         #    raise ValueError
         
         if len(self.origin) - self.n_cards < 0:
-            #print("VENDER BUNKEN...")
+            print("VENDER BUNKEN...")
             temp_list = []
             while self.origin: #tøm stock
                 temp_list.append(self.origin.pop())
@@ -419,14 +419,14 @@ class SolitaireBoard():
             print()
         i = 0
         for f in self.foundations:
-            print("F" + str(i) + ":\t[]") if len(f) == 0 else print("F" + str(i) + ":\t" + str(f[-1])) 
+            print("F" + str(i+1) + ":\t[]") if len(f) == 0 else print("F" + str(i) + ":\t" + str(f[-1])) 
             i += 1
         i = 0
         for col in self.columns:
             if len(col) == 0:
-                print("C" + str(i) + ":\t[]") 
+                print("C" + str(i+1) + ":\t[]") 
             else:
-                print("C" + str(i) + ":\t", end='')
+                print("C" + str(i+1) + ":\t", end='')
                 for card in col:
                     print(str(card) + " ", end='')
                 print()
