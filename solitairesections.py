@@ -59,8 +59,14 @@ def draw_board_section_rects(img, section_rects):
     cv2.rectangle(img,foundation_rects[1][0], foundation_rects[1][1], (0,0,255), 2)
     cv2.rectangle(img,foundation_rects[2][0], foundation_rects[2][1], (0,0,255), 2)
     cv2.rectangle(img,foundation_rects[3][0], foundation_rects[3][1], (0,0,255), 2)
+    
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    k = 1
     for c in col_rects:
         cv2.rectangle(img,c[0], c[1], (0,0,255), 2)
+        text_center = (np.int64((c[0][0] + c[1][0])/2),np.int64((c[0][1] + c[1][1])/2))
+        cv2.putText(img,"c" + str(k),text_center,font,1,(0,0,0),3,cv2.LINE_AA)
+        k += 1
     return img
 
 def get_sections(image):
