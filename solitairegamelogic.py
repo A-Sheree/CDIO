@@ -212,7 +212,7 @@ class DeckMove(SolitaireMove):
         #    raise ValueError
         
         if len(self.origin) - self.n_cards < 0:
-            print("VENDER BUNKEN...")
+            #print("VENDER BUNKEN...")
             temp_list = []
             while self.origin: #tøm stock
                 temp_list.append(self.origin.pop())
@@ -320,9 +320,9 @@ class SolitaireBoard():
         SolitaireBoard.create_deck()
         SolitaireBoard.shuffle_deck()
 
-        for c in SolitaireBoard.deck:
-            print(c.testprintcard() + " ", end='')
-        print()
+        # for c in SolitaireBoard.deck:
+        #     print(c.testprintcard() + " ", end='')
+        # print()
 
         for i in range(7):
             for j in range(i, 7):
@@ -471,12 +471,7 @@ class SolitaireBoard():
 
                 temp_card = col[index] #Card(rank=col[index].rank, suit=col[index].suit)
 
-                # Frigør ved at flytte et kort til foundation
-                if index == -1: 
-                    res = SolitaireBoard.look_for_foundation_destination(temp_card)
-                    if res:
-                        SolitaireBoard.current_move = ToFoundationMove(col, res)
-                        return
+                # -> stod her før           
 
                 # Frigør ved at flytte en konge til en tom kolonne
                 if temp_card.rank == 13: 
@@ -518,7 +513,15 @@ class SolitaireBoard():
                                 res = SolitaireBoard.look_for_column_destinatination(foundation_card)
                                 if res:
                                     SolitaireBoard.current_move = FoundationToColMove(foundation, res)
-                                    return                                
+                                    return
+
+                # Frigør ved at flytte et kort til foundation
+                if index == -1: 
+                    res = SolitaireBoard.look_for_foundation_destination(temp_card)
+                    if res:
+                        SolitaireBoard.current_move = ToFoundationMove(col, res)
+                        return
+
 
 
     #[ ] Flyt kun fra kolonne til kolonne hvis det tillader at få vendt et kort eller at lave kolonnerne smooth.
@@ -837,7 +840,7 @@ if __name__ == "__main__":
     # 1: simuler mange spil
     # 2: step-by-step gennem et spil
     # 3: step-by-step gennem en bestemt sortering
-    GAMEMODE = 3 
+    GAMEMODE = 1 
     
     if GAMEMODE == 1:
         NGAMES = 100
