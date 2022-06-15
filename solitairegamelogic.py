@@ -1,10 +1,11 @@
 from asyncio.windows_events import NULL
-from queue import PriorityQueue
+from queue import Queue
 import random
 import string
 from enum import Enum
 
 from cv2 import sort
+from urllib3 import Retry
 
 class Card():
     suit = "?"
@@ -43,7 +44,11 @@ class Card():
     def __init__(self, rank=0, suit="?"):
         self.rank = rank
         self.suit = suit
+
     def __str__(self):
+        return self.dansk_str()
+
+    def gammel_str(self):
         if self.hidden:
             return "##"
         elif self.rank == 1:
@@ -75,6 +80,22 @@ class Card():
         else:
             return "X" + self.suit
 
+    def dansk_suit(self):
+        if self.suit == "H":
+            return "H"
+        elif self.suit == "D":
+            return "R"
+        elif self.suit == "C":
+            return "K"
+        elif self.suit == "S":
+            return "S"            
+
+    def dansk_str(self):
+        if self.hidden:
+            return "##"
+        else:
+            return self.dansk_suit() + str(self.rank)
+
     def card_from_string(string_card):
         if len(string_card) == 2:
             rank = Card.rank_str_to_int(string_card[0])
@@ -82,7 +103,6 @@ class Card():
             return Card(rank=rank, suit=suit)
         else:
             raise ValueError
-            
 
     def testprintcard(self):
         
@@ -114,6 +134,30 @@ class SolitaireMove():
         self.n_cards = n_cards
         self.text_description = self.describe_move()
 
+    def old_describe_move(self) -> str:
+        if self.move_type == MoveType.SETUP:
+            return "INIT"
+        elif self.move_type == MoveType.DECK:
+            return "DRAW FROM DECK"
+        elif self.move_type == MoveType.TALONTOCOL:
+            if self.destination:
+                return "MOVE " + str(self.origin[-self.n_cards]) + " TO " + str(self.destination[-1])
+            else:
+                return "MOVE " + str(self.origin[-self.n_cards]) + " TO OPEN COLUMN"
+        elif self.move_type == MoveType.TOFOUNDATION:
+            return "MOVE " + str(self.origin[-self.n_cards]) + " TO FOUNDATION"
+        elif self.move_type == MoveType.TALONTOFOUNDATION:
+            return "MOVE " + str(self.origin[-self.n_cards]) + " TO FOUNDATION"
+        elif self.move_type == MoveType.COLTOCOL:
+            if self.destination:
+                return "MOVE " + str(self.origin[-self.n_cards]) + " TO " + str(self.destination[-1])
+            else:
+                return "MOVE " + str(self.origin[-self.n_cards]) + " TO OPEN COLUMN"
+        elif self.move_type == MoveType.FOUNDATIONTOCOL:
+            return "MOVE " + str(self.origin[-self.n_cards]) + " TO " + str(self.destination[-1])
+        elif self.move_type == MoveType.NOMOVE:
+            return "NO MOVE"
+
     def describe_move(self) -> str:
         if self.move_type == MoveType.SETUP:
             return "INIT"
@@ -138,6 +182,7 @@ class SolitaireMove():
         elif self.move_type == MoveType.NOMOVE:
             return "NO MOVE"
 
+
     def __str__(self) -> str:
         return self.text_description
 
@@ -161,18 +206,23 @@ class SolitaireMove():
 
 class DeckMove(SolitaireMove):
     def __init__(self):
-        super().__init__(MoveType.DECK, SolitaireBoard.deck, SolitaireBoard.waste, 1) # change to 3
+        super().__init__(MoveType.DECK, SolitaireBoard.deck, SolitaireBoard.waste, 3)
     def execute_move(self):
         #if len(self.origin) + len(self.destination) < 3:
         #    raise ValueError
         
         if len(self.origin) - self.n_cards < 0:
             #print("VENDER BUNKEN...")
-            while self.origin:
-                self.destination.append(self.origin.pop())
-            while self.destination:
-                self.origin.append(self.destination.pop())                
-        return super().execute_move()
+            temp_list = []
+            while self.origin: #tøm stock
+                temp_list.append(self.origin.pop())
+            while self.destination: #vend bunken
+                self.origin.append(self.destination.pop())      
+            while temp_list:
+                self.origin.append(temp_list.pop())
+
+        for i in range(self.n_cards):
+            self.destination.append(self.origin.pop())   
 
 class TalonToColMove(SolitaireMove):
     def __init__(self, destination):
@@ -292,11 +342,9 @@ class SolitaireBoard():
         SolitaireBoard.create_deck()
         SolitaireBoard.shuffle_deck()
 
-        print("INITIAL DECK")
-        for c in SolitaireBoard.deck:
-            print(c.testprintcard() + " ", end='')
-        print()
-        print("DONE PRINTING")
+        # for c in SolitaireBoard.deck:
+        #     print(c.testprintcard() + " ", end='')
+        # print()
 
         for i in range(7):
             for j in range(i, 7):
@@ -410,14 +458,14 @@ class SolitaireBoard():
             print()
         i = 0
         for f in self.foundations:
-            print("F" + str(i) + ":\t[]") if len(f) == 0 else print("F" + str(i) + ":\t" + str(f[-1])) 
+            print("F" + str(i+1) + ":\t[]") if len(f) == 0 else print("F" + str(i) + ":\t" + str(f[-1])) 
             i += 1
         i = 0
         for col in self.columns:
             if len(col) == 0:
-                print("C" + str(i) + ":\t[]") 
+                print("C" + str(i+1) + ":\t[]") 
             else:
-                print("C" + str(i) + ":\t", end='')
+                print("C" + str(i+1) + ":\t", end='')
                 for card in col:
                     print(str(card) + " ", end='')
                 print()
@@ -462,12 +510,7 @@ class SolitaireBoard():
 
                 temp_card = col[index] #Card(rank=col[index].rank, suit=col[index].suit)
 
-                # Frigør ved at flytte et kort til foundation
-                if index == -1: 
-                    res = SolitaireBoard.look_for_foundation_destination(temp_card)
-                    if res:
-                        SolitaireBoard.current_move = ToFoundationMove(col, res)
-                        return
+                # -> stod her før           
 
                 # Frigør ved at flytte en konge til en tom kolonne
                 if temp_card.rank == 13: 
@@ -509,7 +552,15 @@ class SolitaireBoard():
                                 res = SolitaireBoard.look_for_column_destinatination(foundation_card)
                                 if res:
                                     SolitaireBoard.current_move = FoundationToColMove(foundation, res)
-                                    return                                
+                                    return
+
+                # Frigør ved at flytte et kort til foundation
+                if index == -1: 
+                    res = SolitaireBoard.look_for_foundation_destination(temp_card)
+                    if res:
+                        SolitaireBoard.current_move = ToFoundationMove(col, res)
+                        return
+
 
 
     #[ ] Flyt kun fra kolonne til kolonne hvis det tillader at få vendt et kort eller at lave kolonnerne smooth.
@@ -533,17 +584,32 @@ class SolitaireBoard():
     # flyt straks alle kort som kan op I foundation for måske at kunne åbne
     # for muligheden at lave et træk med et andet kort der allerede findes men er blokeret.
 
-        # Tjek om et et kort fra talon kan flyttes fra talon ud på en kolonne
-        if SolitaireBoard.move_count > 50:
-            if SolitaireBoard.waste:
+        # queue til træk der ikke vender et nyt kort 
+        move_queue = Queue()
+
+        # Flyt kort til foundation hvis de er next-card-protected
+        for col in SolitaireBoard.columns:
+            if col:
+                res = SolitaireBoard.look_for_foundation_destination(col[-1])
+                if res:
+                    if SolitaireBoard.next_card_protected(col[-1]):
+                        move_queue.put(ToFoundationMove(col, res))
+        if SolitaireBoard.waste and (len(SolitaireBoard.waste) + len(SolitaireBoard.deck) > 2 or len(SolitaireBoard.deck) == 0):
+            res = SolitaireBoard.look_for_foundation_destination(SolitaireBoard.waste[-1])
+            if res:
+                if SolitaireBoard.next_card_protected(SolitaireBoard.waste[-1]):
+                    move_queue.put(ToFoundationMove(SolitaireBoard.waste, res))
+
+        if SolitaireBoard.move_count > 100:
+            # Tjek om et et kort fra talon kan flyttes fra talon ud på en kolonne
+            if SolitaireBoard.waste and (len(SolitaireBoard.waste) + len(SolitaireBoard.deck) > 2 or len(SolitaireBoard.deck) == 0):
                 temp_card = Card(rank=SolitaireBoard.waste[-1].rank, suit=SolitaireBoard.waste[-1].suit)
                 if temp_card.rank < 5 or (temp_card.rank > 8 and temp_card.rank < 13):
                     
                     for col in SolitaireBoard.columns:
                         res = SolitaireBoard.look_for_column_destinatination(temp_card)
                         if res:
-                            SolitaireBoard.current_move = TalonToColMove(res)
-                            return
+                            move_queue.put(TalonToColMove(res))
 
         # # Flyt kort til foundation hvis de er next-card-protected
         # for col in SolitaireBoard.columns:
@@ -560,40 +626,38 @@ class SolitaireBoard():
         #             SolitaireBoard.current_move = ToFoundationMove(SolitaireBoard.waste, res)
         #             return
 
-        # Flyt kort til foundation hvis de er next-card-protected
-        for col in SolitaireBoard.columns:
-            if col:
-                res = SolitaireBoard.look_for_foundation_destination(col[-1])
+        # begynd at flytte kort til foundation
+        # Flyt kort til foundation hvis selvom de ikke er next-card-protected
+        if SolitaireBoard.move_count > 30:
+            for col in SolitaireBoard.columns:
+                if col:
+                    res = SolitaireBoard.look_for_foundation_destination(col[-1])
+                    if res:
+                        move_queue.put(ToFoundationMove(col, res))
+            if SolitaireBoard.waste and (len(SolitaireBoard.waste) + len(SolitaireBoard.deck) > 2 or len(SolitaireBoard.deck) == 0):
+                res = SolitaireBoard.look_for_foundation_destination(SolitaireBoard.waste[-1])
                 if res:
-                    if SolitaireBoard.next_card_protected(col[-1]):
-                        SolitaireBoard.current_move = ToFoundationMove(col, res)
-                        return
-        if SolitaireBoard.waste:
-            res = SolitaireBoard.look_for_foundation_destination(SolitaireBoard.waste[-1])
-            if res:
-                if SolitaireBoard.next_card_protected(SolitaireBoard.waste[-1]):
-                    SolitaireBoard.current_move = ToFoundationMove(SolitaireBoard.waste, res)
-                    return
+                    move_queue.put(ToFoundationMove(SolitaireBoard.waste, res))
 
 
-
-
-        if SolitaireBoard.move_count > 160: #start moving all ranks from talon to columns
-            if SolitaireBoard.waste:
+        #start moving all ranks from talon to columns
+        if SolitaireBoard.move_count > 50:
+            if SolitaireBoard.waste and (len(SolitaireBoard.waste) + len(SolitaireBoard.deck) > 2 or len(SolitaireBoard.deck) == 0):
                 temp_card = Card(rank=SolitaireBoard.waste[-1].rank, suit=SolitaireBoard.waste[-1].suit)     
                 if temp_card.rank == 13: # find tom kolonne
                     temp_move = SolitaireBoard.make_way_for_the_king(SolitaireBoard.waste, -1)
                     if temp_move.move_type != MoveType.NOMOVE:
-                        SolitaireBoard.current_move = temp_move
-                        return
+                        move_queue.put(temp_move)
                 else:
                     for col in SolitaireBoard.columns:
                         res = SolitaireBoard.look_for_column_destinatination(temp_card)
                         if res:
-                            SolitaireBoard.current_move = TalonToColMove(res)
-                            return
+                            move_queue.put(TalonToColMove(res))
 
-        if SolitaireBoard.move_count > 200: # begynd at lægge kolonner sammen
+        
+
+        if SolitaireBoard.move_count > 200:
+            # begynd at lægge kolonner sammen
             for col in SolitaireBoard.columns:
                 if col and col[0].hidden: # indeholder et skjult kort
                     # Find det øverste synlige kort i kolonnen
@@ -605,32 +669,23 @@ class SolitaireBoard():
                     temp_card = col[index]
                     res = SolitaireBoard.look_for_column_destinatination(temp_card)
                     if res:
-                        SolitaireBoard.current_move = ColToColMove(col, res, abs(index))
-                        return
-
-        if SolitaireBoard.move_count > 100: # begynd at flytte kort til foundation
-            # Flyt kort til foundation hvis selvom de ikke er next-card-protected
-            for col in SolitaireBoard.columns:
-                if col:
-                    res = SolitaireBoard.look_for_foundation_destination(col[-1])
-                    if res:
-                        SolitaireBoard.current_move = ToFoundationMove(col, res)
-                        return
-            if SolitaireBoard.waste:
-                res = SolitaireBoard.look_for_foundation_destination(SolitaireBoard.waste[-1])
-                if res:
-                    SolitaireBoard.current_move = ToFoundationMove(SolitaireBoard.waste, res)
-                    return
-
+                        move_queue.put(ColToColMove(col, res, abs(index)))
 
 
         # ellers, vend et kort fra bunken
-        if len(SolitaireBoard.deck) + len(SolitaireBoard.waste) > 0:
-            SolitaireBoard.current_move = DeckMove()
-            return
-        else:
-            SolitaireBoard.current_move = NoMoveMove()
-            return
+        if len(SolitaireBoard.deck) + len(SolitaireBoard.waste) > 2:
+            move_queue.put(DeckMove())
+        # 
+        move_queue.put(NoMoveMove())
+
+
+        SolitaireBoard.current_move = move_queue.get()
+        # searching = True
+        # while searching:
+        #     if not SolitaireBoard.get_current_state() in SolitaireBoard.state_history:
+        #         searching = False
+        #     else:
+        #         SolitaireBoard.current_move = move_queue.get()
 
 
     def next_card_protected(card: Card):
@@ -804,6 +859,7 @@ def simulate_games(n_games, move_limit):
     sum = 0
     for i in range(n_games):
         SolitaireBoard.new_game()
+
         while SolitaireBoard.move_count < move_limit:
             SolitaireBoard.new_suggest()
             SolitaireBoard.execute_current_move()
@@ -811,6 +867,9 @@ def simulate_games(n_games, move_limit):
                 break
 
             if SolitaireBoard.is_game_over():
+                print("LØSNING FUNDET!")
+                for m in SolitaireBoard.move_history:
+                    print(str(m))
                 sum += 1
                 break
     return sum
@@ -820,7 +879,7 @@ if __name__ == "__main__":
     # 1: simuler mange spil
     # 2: step-by-step gennem et spil
     # 3: step-by-step gennem en bestemt sortering
-    GAMEMODE = 3 
+    GAMEMODE = 1 
     
     if GAMEMODE == 1:
         NGAMES = 100
@@ -846,7 +905,7 @@ if __name__ == "__main__":
             board.print_board()
 
             k += 1
-            MOVESPERINPUT = 70
+            MOVESPERINPUT = 10
             if k > MOVESPERINPUT: #kør flere træk ad gangen så man ikke skal taste så meget
                 k = 0
                 print("Continue..")
@@ -887,7 +946,7 @@ if __name__ == "__main__":
                 break
     elif GAMEMODE == 3:
         board = SolitaireBoard()
-        SolitaireBoard.new_game_from_string("6H 9S 6S AC AD JH AH KH 6C QD 9H 2S 9D 2D 8C 2C 7C 4D TS 4S 7S AS 5C 3H 2H QC 5D 8S JC TH 5H 4H 7H JD 4C TC KS 3S 9C KC 3C 8H QS JS 6D KD 5S QH 3D 7D TD 8D")
+        SolitaireBoard.new_game_from_string("3C 2C 8C KH AD QH QC 6C 3S 3H 9S KS QS AS 6H TS 5S AC 8S 9C 5C JD QD 4C 4H 2S 8D 9D KC 7C 8H 4D AH TH JC JH 3D 7D 9H 7S 6D KD 4S JS TC 5D 2H 6S 7H TD 2D 5H")
         print("Game is in auto solve mode..")
         print("Enter any input to continue")
         user_input = input()
@@ -901,7 +960,7 @@ if __name__ == "__main__":
             board.print_board()
 
             k += 1
-            MOVESPERINPUT = 70
+            MOVESPERINPUT = 20
             if k > MOVESPERINPUT: #kør flere træk ad gangen så man ikke skal taste så meget
                 k = 0
                 print("Continue..")
