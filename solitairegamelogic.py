@@ -442,16 +442,17 @@ class SolitaireBoard():
 
     def print_board(self):
         if len(self.deck) == 0:
-            print("D:\t##")
+            print("D:\t[]]")
         else:
-            print("D:\t[]")
-            # print("D" + ":\t", end='')
-            # for card in self.deck:
-            #     print(card.testprintcard() + " ", end='')
-            # print()
+            #print("D:\t##")
+            print("D" + ":\t", end='')
+            for card in self.deck:
+                print(card.testprintcard() + " ", end='')
+            print()
         if len(self.waste) == 0:
-            print("W:\t##")
+            print("W:\t[]]")
         else:
+            #print("W:\t##")
             print("W" + ":\t", end='')
             for card in self.waste:
                 print(card.testprintcard() + " ", end='')
@@ -610,21 +611,6 @@ class SolitaireBoard():
                         res = SolitaireBoard.look_for_column_destinatination(temp_card)
                         if res:
                             move_queue.put(TalonToColMove(res))
-
-        # # Flyt kort til foundation hvis de er next-card-protected
-        # for col in SolitaireBoard.columns:
-        #     if col:
-        #         res = SolitaireBoard.look_for_foundation_destination(col[-1])
-        #         if res:
-        #             if SolitaireBoard.next_card_protected(col[-1]):
-        #                 SolitaireBoard.current_move = ToFoundationMove(col, res)
-        #                 return
-        # if SolitaireBoard.waste:
-        #     res = SolitaireBoard.look_for_foundation_destination(SolitaireBoard.waste[-1])
-        #     if res:
-        #         if SolitaireBoard.next_card_protected(SolitaireBoard.waste[-1]):
-        #             SolitaireBoard.current_move = ToFoundationMove(SolitaireBoard.waste, res)
-        #             return
 
         # begynd at flytte kort til foundation
         # Flyt kort til foundation hvis selvom de ikke er next-card-protected
@@ -867,9 +853,9 @@ def simulate_games(n_games, move_limit):
                 break
 
             if SolitaireBoard.is_game_over():
-                print("LØSNING FUNDET!")
-                for m in SolitaireBoard.move_history:
-                    print(str(m))
+                #print("LØSNING FUNDET!")
+                #for m in SolitaireBoard.move_history:
+                #    print(str(m))
                 sum += 1
                 break
     return sum
@@ -882,7 +868,7 @@ if __name__ == "__main__":
     GAMEMODE = 1 
     
     if GAMEMODE == 1:
-        NGAMES = 100
+        NGAMES = 1000
         MOVELIMIT = 500
         print("Simulating " + str(NGAMES) + " solitaires")
         result = simulate_games(NGAMES, MOVELIMIT)
