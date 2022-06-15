@@ -442,20 +442,20 @@ class SolitaireBoard():
 
     def print_board(self):
         if len(self.deck) == 0:
-            print("D:\t[]]")
+            print("D:\t[]")
         else:
             #print("D:\t##")
             print("D" + ":\t", end='')
             for card in self.deck:
-                print(card.testprintcard() + " ", end='')
+                print(str(card) + " ", end='')
             print()
         if len(self.waste) == 0:
-            print("W:\t[]]")
+            print("W:\t[]")
         else:
             #print("W:\t##")
             print("W" + ":\t", end='')
             for card in self.waste:
-                print(card.testprintcard() + " ", end='')
+                print(str(card) + " ", end='')
             print()
         i = 0
         for f in self.foundations:
@@ -595,15 +595,21 @@ class SolitaireBoard():
                 if res:
                     if SolitaireBoard.next_card_protected(col[-1]):
                         move_queue.put(ToFoundationMove(col, res))
-        if SolitaireBoard.waste and (len(SolitaireBoard.waste) + len(SolitaireBoard.deck) > 2 or len(SolitaireBoard.deck) == 0):
+        if SolitaireBoard.waste and (len(SolitaireBoard.waste) + len(SolitaireBoard.deck) > 3 or len(SolitaireBoard.deck) == 0):
             res = SolitaireBoard.look_for_foundation_destination(SolitaireBoard.waste[-1])
             if res:
                 if SolitaireBoard.next_card_protected(SolitaireBoard.waste[-1]):
                     move_queue.put(ToFoundationMove(SolitaireBoard.waste, res))
 
+
+        # vend et kort fra bunken
+        if len(SolitaireBoard.deck) + len(SolitaireBoard.waste) > 2 and not (len(SolitaireBoard.waste) == 3 and len(SolitaireBoard.deck) == 0 ):
+            move_queue.put(DeckMove())
+        # 
+
         if SolitaireBoard.move_count > 100:
             # Tjek om et et kort fra talon kan flyttes fra talon ud på en kolonne
-            if SolitaireBoard.waste and (len(SolitaireBoard.waste) + len(SolitaireBoard.deck) > 2 or len(SolitaireBoard.deck) == 0):
+            if SolitaireBoard.waste and (len(SolitaireBoard.waste) + len(SolitaireBoard.deck) > 3 or len(SolitaireBoard.deck) == 0):
                 temp_card = Card(rank=SolitaireBoard.waste[-1].rank, suit=SolitaireBoard.waste[-1].suit)
                 if temp_card.rank < 5 or (temp_card.rank > 8 and temp_card.rank < 13):
                     
@@ -620,7 +626,7 @@ class SolitaireBoard():
                     res = SolitaireBoard.look_for_foundation_destination(col[-1])
                     if res:
                         move_queue.put(ToFoundationMove(col, res))
-            if SolitaireBoard.waste and (len(SolitaireBoard.waste) + len(SolitaireBoard.deck) > 2 or len(SolitaireBoard.deck) == 0):
+            if SolitaireBoard.waste and (len(SolitaireBoard.waste) + len(SolitaireBoard.deck) > 3 or len(SolitaireBoard.deck) == 0):
                 res = SolitaireBoard.look_for_foundation_destination(SolitaireBoard.waste[-1])
                 if res:
                     move_queue.put(ToFoundationMove(SolitaireBoard.waste, res))
@@ -628,7 +634,7 @@ class SolitaireBoard():
 
         #start moving all ranks from talon to columns
         if SolitaireBoard.move_count > 50:
-            if SolitaireBoard.waste and (len(SolitaireBoard.waste) + len(SolitaireBoard.deck) > 2 or len(SolitaireBoard.deck) == 0):
+            if SolitaireBoard.waste and (len(SolitaireBoard.waste) + len(SolitaireBoard.deck) > 3 or len(SolitaireBoard.deck) == 0):
                 temp_card = Card(rank=SolitaireBoard.waste[-1].rank, suit=SolitaireBoard.waste[-1].suit)     
                 if temp_card.rank == 13: # find tom kolonne
                     temp_move = SolitaireBoard.make_way_for_the_king(SolitaireBoard.waste, -1)
@@ -659,13 +665,32 @@ class SolitaireBoard():
 
 
         # ellers, vend et kort fra bunken
-        if len(SolitaireBoard.deck) + len(SolitaireBoard.waste) > 2:
+        if len(SolitaireBoard.deck) + len(SolitaireBoard.waste) > 2 and not (len(SolitaireBoard.waste) == 3 and len(SolitaireBoard.deck) == 0 ):
             move_queue.put(DeckMove())
         # 
         move_queue.put(NoMoveMove())
 
-
         SolitaireBoard.current_move = move_queue.get()
+
+        current_state = SolitaireBoard.get_current_state()
+        #if SolitaireBoard.current_move.move_type == MoveType.DECK:
+        if SolitaireBoard.state_history.count(current_state) == 1:
+            #print("We have been here once before")
+            SolitaireBoard.current_move = move_queue.get()
+        elif SolitaireBoard.state_history.count(current_state) > 1:
+            while SolitaireBoard.state_history.count(current_state) > 1:
+                SolitaireBoard.current_move = move_queue.get()
+                current_state = SolitaireBoard.get_current_state()
+          
+
+        # elif SolitaireBoard.state_history.count(current_state) == 2:
+        #     print("We have been here twice before")
+        #     SolitaireBoard.current_move = move_queue.get()
+        # elif SolitaireBoard.state_history.count(current_state) > 5:
+        #     print("We have been here more than twice, try something new")
+        #     SolitaireBoard.current_move = move_queue.get()
+
+
         # searching = True
         # while searching:
         #     if not SolitaireBoard.get_current_state() in SolitaireBoard.state_history:
@@ -843,6 +868,7 @@ class SolitaireBoard():
 
 def simulate_games(n_games, move_limit):
     sum = 0
+    total_moves = 0
     for i in range(n_games):
         SolitaireBoard.new_game()
 
@@ -858,7 +884,10 @@ def simulate_games(n_games, move_limit):
                 #    print(str(m))
                 sum += 1
                 break
-    return sum
+        total_moves += SolitaireBoard.move_count
+
+    avg_moves_per_game = total_moves / n_games
+    return sum, avg_moves_per_game
 
 if __name__ == "__main__":
     # GAMEMODE:
@@ -868,11 +897,14 @@ if __name__ == "__main__":
     GAMEMODE = 1 
     
     if GAMEMODE == 1:
-        NGAMES = 1000
+        NGAMES = 100
         MOVELIMIT = 500
         print("Simulating " + str(NGAMES) + " solitaires")
-        result = simulate_games(NGAMES, MOVELIMIT)
-        print(str(result) + " of " + str(NGAMES) + " were solved.")
+        print("Limit is set to " + str(MOVELIMIT) + " moves per solitaire.")
+        n_games_solved, avg_moves_used = simulate_games(NGAMES, MOVELIMIT)
+        print(str(n_games_solved) + " of " + str(NGAMES) + " were solved.")
+        print(str(avg_moves_used) + " moves used per attempt on average.")
+
     elif GAMEMODE == 2:
         board = SolitaireBoard()
         SolitaireBoard.create_deck()
