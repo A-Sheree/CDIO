@@ -216,6 +216,12 @@ class SolitaireBoard():
     state_history = []
 
 
+    def create_deck_unidentified():
+        SolitaireBoard.deck = []
+        for x in range(52):
+            SolitaireBoard.deck.append(Card())
+
+
     def create_deck():
         SolitaireBoard.deck = []
         for x in range(1, 14, 1):
@@ -256,6 +262,22 @@ class SolitaireBoard():
         #         SolitaireBoard.columns[i].append(e)
         #     SolitaireBoard.columns[i][-1].hidden = False
 
+    def new_game_unidentified():
+        SolitaireBoard.deck = []
+        SolitaireBoard.waste = []
+        SolitaireBoard.foundations = [[], [], [], []]
+        SolitaireBoard.columns = [[], [], [], [], [], [], []]
+        SolitaireBoard.current_move = NoMoveMove()
+        SolitaireBoard.move_count = 0
+        SolitaireBoard.move_history = []
+        SolitaireBoard.state_history = []
+
+        SolitaireBoard.create_deck_unidentified()
+
+        for i in range(7):
+            for j in range(i, 7):
+                e = SolitaireBoard.deck.pop()
+                SolitaireBoard.columns[j].append(e)
 
     def new_game():
         SolitaireBoard.deck = []
@@ -309,15 +331,16 @@ class SolitaireBoard():
         identified_deck, identified_waste, identified_foundations, identified_columns = cards
         if SolitaireBoard.waste and SolitaireBoard.waste[-1].hidden:
             SolitaireBoard.waste[-1].hidden = False
-            SolitaireBoard.waste[-1].rank = identified_waste[-1].rank
-            SolitaireBoard.waste[-1].suit = identified_waste[-1].suit
-
+            if identified_waste[-1]: # <- supposed to be true
+                SolitaireBoard.waste[-1].rank = identified_waste[-1].rank
+                SolitaireBoard.waste[-1].suit = identified_waste[-1].suit
         col_index = 0
         for col in SolitaireBoard.columns:
             if col and col[-1].hidden:
                 col[-1].hidden = False
-                col[-1].rank = identified_columns[col_index][-1].rank
-                col[-1].suit = identified_columns[col_index][-1].suit
+                if identified_columns[col_index]: # <- supposed to be true
+                    col[-1].rank = identified_columns[col_index][-1].rank
+                    col[-1].suit = identified_columns[col_index][-1].suit
             col_index += 1
 
     def get_current_state():
@@ -333,6 +356,12 @@ class SolitaireBoard():
         state_string += str(SolitaireBoard.current_move)
         return state_string
 
+    def execute_current_without_revealing():
+        SolitaireBoard.state_history.append(SolitaireBoard.get_current_state())
+        SolitaireBoard.current_move.execute_move()
+        SolitaireBoard.move_history.append(SolitaireBoard.current_move)
+        SolitaireBoard.move_count += 1
+
     def execute_current_move():
         SolitaireBoard.state_history.append(SolitaireBoard.get_current_state())
         SolitaireBoard.current_move.execute_move()
@@ -347,6 +376,15 @@ class SolitaireBoard():
             if col:
                 col[-1].hidden = False
 
+    def cards_need_identification():
+        if SolitaireBoard.waste:
+            if SolitaireBoard.waste[-1].hidden:
+                return True
+        for col in SolitaireBoard.columns:
+            if col and col[-1].hidden:
+                return True
+        return False
+
     def is_game_over():
         return (len(SolitaireBoard.foundations[0]) == 13 and 
                 len(SolitaireBoard.foundations[1]) == 13 and 
@@ -358,10 +396,11 @@ class SolitaireBoard():
         if len(self.deck) == 0:
             print("D:\t##")
         else:
-            print("D" + ":\t", end='')
-            for card in self.deck:
-                print(card.testprintcard() + " ", end='')
-            print()
+            print("D:\t[]")
+            # print("D" + ":\t", end='')
+            # for card in self.deck:
+            #     print(card.testprintcard() + " ", end='')
+            # print()
         if len(self.waste) == 0:
             print("W:\t##")
         else:

@@ -110,23 +110,51 @@ def take_picture():
 
         global current_frame
         global current_frame_clean
-        global cards
         current_frame = video.read()[1]
         current_frame_clean = current_frame.copy()
         #cv2.imwrite(filename='testimg.jpg', img=current_frame)
 
         # - - Detect cards in the frame - -
-        current_frame, cards = carddetection.processing(current_frame)
-
+        current_frame, temp_cards = carddetection.processing(current_frame)
+        global cards
+        cards = temp_cards
+        
         # - - Place detected cards into columns - - 
         global cards_in_sections
         cards_in_sections = solitairesections.place_cards(current_frame, cards)
-        cards_in_sections = card_adapter(cards_in_sections)        
+        cards_in_sections = card_adapter(cards_in_sections)
+
+        # Show names of detected cards in output box
+        update_detection_output_box()
+
+def update_detection_output_box():
+    game_logic_deck, game_logic_waste, game_logic_foundations,game_logic_columns = cards_in_sections
+    
+    result_string = ""
+    if game_logic_waste:
+        result_string += "W: " + str(game_logic_waste[-1]) +"\n"
+    else:
+        result_string += "W: []\n"
+
+    c = 1
+    for col in game_logic_columns:
+        if col:
+            result_string += "C" + str(c) + ": " + str(col[-1]) +"\t"
+        else:
+            result_string += "C" + str(c) + ": []\t"
+        
+        if c == 3 or c == 6:
+            result_string += "\n"
+        c += 1
+
+    detection_output_box.delete("1.0", "end")
+    detection_output_box.insert(INSERT,result_string)
 
 def fix_card():
     fix_input = fix_entry.get()
     if not len(fix_input) == 5:
         return
+    fix_entry.delete(0, "end")
 
     fix_input = fix_input.split()
     wrong_name = fix_input[0]
@@ -144,9 +172,47 @@ def fix_card():
     for c in cards:
         carddetection.draw_results(current_frame, c)
 
-    fix_entry.delete(0, "end")
+    #??
+    global cards_in_sections
+    cards_in_sections = solitairesections.place_cards(current_frame, cards)
+    cards_in_sections = card_adapter(cards_in_sections)
 
+    update_detection_output_box()
 
+def view_board_state():
+    # outout redirection
+    # - - -
+    old_stdout = sys.stdout  
+    result = StringIO()
+    sys.stdout = result
+    print(SolitaireBoard.current_move)
+    board.print_board()
+    result_string = result.getvalue()
+    sys.stdout = old_stdout
+    # - - -
+
+    logic_output_box.delete("1.0", "end")
+    logic_output_box.insert(INSERT,result_string)
+
+    #x = input("Command: ")
+    #print("You entered: " + x)
+    #print("Deck changed...")
+    
+def confirm_identification():
+    pass
+
+def next_move():
+    print("Next move..")
+    if SolitaireBoard.cards_need_identification():
+        print("There are unidentified cards..")
+        SolitaireBoard.identify_cards(cards_in_sections)
+    SolitaireBoard.new_suggest()        
+    SolitaireBoard.execute_current_without_revealing()
+    view_board_state()
+
+    if SolitaireBoard.cards_need_identification():
+        take_picture()
+        
 # - - Initialize - - 
 camera_connected = False
 video = None #
@@ -154,9 +220,9 @@ cards = []
 current_frame = None
 current_frame_clean = None
 board = SolitaireBoard()
+SolitaireBoard.new_game_unidentified()
+
 cards_in_sections = []
-testimg1 = cv2.imread("Cards1.JPG")
-testimg2 = cv2.imread("Cards2.JPG")
 root = Tk()
 
 # - - UI WIDGETS
@@ -180,35 +246,46 @@ btn_take_pic.grid(row=2, column=0, padx=5, pady=5)
 btn_view_stream = Button(root, text="View stream", command=view_stream, width=10, height=5, bg='blue', fg='white')
 btn_view_stream.grid(row=2, column=1, padx=5, pady=5)
 
-btn_show_current_frame = Button(root, text="Show current frame", command=show_current_frame, width=10, height=5, bg='blue', fg='white')
+btn_show_current_frame = Button(root, text="View current", command=show_current_frame, width=10, height=5, bg='blue', fg='white')
 btn_show_current_frame.grid(row=2, column=2, padx=5, pady=5)
 
-btn_test2 = Button(root, text="Test", width=10, height=5, bg='blue', fg='white')
-btn_test2.grid(row=2, column=3, padx=5, pady=5)
-btn_test3 = Button(root, text="Test", width=10, height=5, bg='blue', fg='white')
-btn_test3.grid(row=3, column=0, padx=5, pady=5)
-btn_test4 = Button(root, text="Test", width=10, height=5, bg='blue', fg='white')
-btn_test4.grid(row=3, column=1, padx=5, pady=5)
+btn_view_board = Button(root, text="View State", command=view_board_state, width=10, height=5, bg='blue', fg='white')
+btn_view_board.grid(row=2, column=3, padx=5, pady=5)
+
+btn_confirm_id = Button(root, text="Test", command=confirm_identification, width=10, height=5, bg='blue', fg='white')
+btn_confirm_id.grid(row=3, column=0, padx=5, pady=5)
+
+btn_suggest_move = Button(root, text="Next move", command=next_move, width=10, height=5, bg='blue', fg='white')
+btn_suggest_move.grid(row=3, column=1, padx=5, pady=5)
+
+
+#btn_test4 = Button(root, text="Test", width=10, height=5, bg='blue', fg='white')
+#btn_test4
 btn_test5 = Button(root, text="Test", width=10, height=5, bg='blue', fg='white')
 btn_test5.grid(row=3, column=2, padx=5, pady=5)
 btn_test6 = Button(root, text="Test", width=10, height=5, bg='blue', fg='white')
 btn_test6.grid(row=3, column=3, padx=5, pady=5)
 
-output_label = Label(root, text="Output box")
-output_label.grid(row=4, column=0, padx=5, pady=5, columnspan=2)
+logic_output_label = Label(root, text="Logic state")
+logic_output_label.grid(row=4, column=0, padx=5, pady=5, columnspan=2)
 
-output_box = Text(root, height=15, width=35)
-output_box.grid(row=5, column=0, padx=5, pady=5, columnspan=3)
+logic_output_box = Text(root, height=15, width=35)
+logic_output_box.grid(row=6, column=0, padx=5, pady=5, columnspan=3)
+
+detection_output_label = Label(root, text="Cards detected")
+detection_output_label.grid(row=7, column=0, padx=5, pady=5, columnspan=2)
+
+detection_output_box = Text(root, height=4, width=35)
+detection_output_box.grid(row=8, column=0, padx=5, pady=5, columnspan=3)
 
 fix_label = Label(root, text="Correction input")
-fix_label.grid(row=6, column=0, padx=5, pady=5, columnspan=2)
+fix_label.grid(row=9, column=0, padx=5, pady=5, columnspan=2)
 
 fix_entry = Entry(root, width=45, borderwidth=5)
-fix_entry.grid(row=7, column=0, padx=5, pady=5, columnspan=3)
-
+fix_entry.grid(row=10, column=0, padx=5, pady=5, columnspan=3)
 
 fix_btn = Button(root, text="Fix card", command=fix_card, bg='blue', fg='white', width=10)
-fix_btn.grid(row=7, column=3, padx=5, pady=5)
+fix_btn.grid(row=10, column=3, padx=5, pady=5)
 
 
 # tekstboks1 = Text(root, width=60, height=15)
