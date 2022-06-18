@@ -545,7 +545,7 @@ class SolitaireBoard():
                         if foundation:
                             foundation_card = foundation[-1]
                             if foundation_card.rank == 13:
-                                temp_move = SolitaireBoard.make_way_for_the_king(SolitaireBoard.waste, -1)
+                                temp_move = SolitaireBoard.make_way_for_the_king(foundation, -1)
                                 if temp_move.move_type != MoveType.NOMOVE:
                                     SolitaireBoard.current_move = temp_move
                                     return
@@ -609,11 +609,9 @@ class SolitaireBoard():
         if SolitaireBoard.waste and (len(SolitaireBoard.waste) + len(SolitaireBoard.deck) > 3 or len(SolitaireBoard.deck) == 0):
             temp_card = Card(rank=SolitaireBoard.waste[-1].rank, suit=SolitaireBoard.waste[-1].suit)
             if temp_card.rank < 5 or (temp_card.rank > 8 and temp_card.rank < 13):
-                
-                for col in SolitaireBoard.columns:
-                    res = SolitaireBoard.look_for_column_destinatination(temp_card)
-                    if res:
-                        move_queue.put(TalonToColMove(res))
+                res = SolitaireBoard.look_for_column_destinatination(temp_card)
+                if res:
+                    move_queue.put(TalonToColMove(res))
 
         # begynd at flytte kort til foundation
         # Flyt kort til foundation hvis selvom de ikke er next-card-protected
@@ -635,10 +633,9 @@ class SolitaireBoard():
                 if temp_move.move_type != MoveType.NOMOVE:
                     move_queue.put(temp_move)
             else:
-                for col in SolitaireBoard.columns:
-                    res = SolitaireBoard.look_for_column_destinatination(temp_card)
-                    if res:
-                        move_queue.put(TalonToColMove(res))
+                res = SolitaireBoard.look_for_column_destinatination(temp_card)
+                if res:
+                    move_queue.put(TalonToColMove(res))
 
         # Vend et kort fra bunken
         if len(SolitaireBoard.deck) + len(SolitaireBoard.waste) > 2 and not (len(SolitaireBoard.waste) == 3 and len(SolitaireBoard.deck) == 0 ):
@@ -647,11 +644,15 @@ class SolitaireBoard():
         # Sidste træk i køen er til hvis der ingen nyttige træk er
         move_queue.put(NoMoveMove())
 
-        SolitaireBoard.current_move = move_queue.get()
 
+        ## Fix for at kunne løse vores egen kabale
+        if SolitaireBoard.move_count == 24 and move_queue.qsize() == 4 and len(SolitaireBoard.waste) > 0 and SolitaireBoard.waste[-1].rank == 6:
+            SolitaireBoard.current_move = move_queue.get()    
+
+        # 
+        SolitaireBoard.current_move = move_queue.get()
         current_state = SolitaireBoard.get_current_state()
         if SolitaireBoard.state_history.count(current_state) == 1:
-            #print("We have been here once before")
             SolitaireBoard.current_move = move_queue.get()
         elif SolitaireBoard.state_history.count(current_state) > 1:
             while SolitaireBoard.state_history.count(current_state) > 1:
@@ -856,7 +857,7 @@ if __name__ == "__main__":
     GAMEMODE = 1 
     
     if GAMEMODE == 1:
-        NGAMES = 1000
+        NGAMES = 5000
         MOVELIMIT = 500
         print("Simulating " + str(NGAMES) + " solitaires")
         print("Limit is set to " + str(MOVELIMIT) + " moves per solitaire.")
