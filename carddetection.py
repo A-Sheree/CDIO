@@ -129,13 +129,20 @@ def getcontours (dilate):
     return sorted(contours, key=cv2.contourArea, reverse=True)
 
 def find_cards (contours):
+    if len(contours) < 1:
+        return []
+    first_rect = cv2.minAreaRect(contours[0])
+    area = first_rect[1][0] * first_rect[1][1]
+    area_lower = area * 0.8
+    area_upper = area * 1.2
+
     cards = []
     count = -1
     for c in contours[:]:
         ((x, y), (w, h),a) = rect = cv2.minAreaRect(c)
         box = cv2.boxPoints(rect)
         box = np.int0(box)
-        if (h > 0 and w > 0):
+        if (area_lower < h*w < area_upper): #if (h > 0 and w > 0):
             ar = w / float(h) if w > h > 0 else h / float(w) 
             if (1.43 <= ar <= 1.58):
                 count += 1

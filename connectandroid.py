@@ -202,18 +202,29 @@ def confirm_identification():
     pass
 
 def next_move():
-    print("Next move..")
-    if SolitaireBoard.cards_need_identification():
-        print("There are unidentified cards..")
-        SolitaireBoard.identify_cards(cards_in_sections)
-    SolitaireBoard.new_suggest()        
-    SolitaireBoard.execute_current_without_revealing()
-    view_board_state()
+    global ui_state
 
-    if SolitaireBoard.cards_need_identification():
+    if ui_state == 0: #init
         take_picture()
-        
+        btn_suggest_move['text'] = "Confirm"
+        ui_state = 1
+    elif ui_state == 1: #confirm card detection
+        if SolitaireBoard.cards_need_identification():
+            print("There are unidentified cards..")
+            SolitaireBoard.identify_cards(cards_in_sections)
+        SolitaireBoard.new_suggest()        
+        SolitaireBoard.execute_current_without_revealing()
+        view_board_state()
+        btn_suggest_move['text'] = "Next"
+        ui_state = 2
+    elif ui_state == 2:
+        if SolitaireBoard.cards_need_identification():
+            take_picture()
+            btn_suggest_move['text'] = "Confirm"
+        ui_state = 1
+
 # - - Initialize - - 
+ui_state = 0 # 0: init, 1: confirm detection, 2: confirm move
 camera_connected = False
 video = None #
 cards = []
@@ -269,14 +280,14 @@ btn_test6.grid(row=3, column=3, padx=5, pady=5)
 logic_output_label = Label(root, text="Logic state")
 logic_output_label.grid(row=4, column=0, padx=5, pady=5, columnspan=2)
 
-logic_output_box = Text(root, height=15, width=35)
-logic_output_box.grid(row=6, column=0, padx=5, pady=5, columnspan=3)
+logic_output_box = Text(root, height=15, width=45)
+logic_output_box.grid(row=6, column=0, padx=5, pady=5, columnspan=4)
 
 detection_output_label = Label(root, text="Cards detected")
 detection_output_label.grid(row=7, column=0, padx=5, pady=5, columnspan=2)
 
-detection_output_box = Text(root, height=4, width=35)
-detection_output_box.grid(row=8, column=0, padx=5, pady=5, columnspan=3)
+detection_output_box = Text(root, height=4, width=45)
+detection_output_box.grid(row=8, column=0, padx=5, pady=5, columnspan=4)
 
 fix_label = Label(root, text="Correction input")
 fix_label.grid(row=9, column=0, padx=5, pady=5, columnspan=2)
