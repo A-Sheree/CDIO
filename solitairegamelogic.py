@@ -495,9 +495,6 @@ class SolitaireBoard():
                     SolitaireBoard.current_move = ToFoundationMove(res, f)
                     return
 
-
-                    # check med Tobias om dette er rigtigt kaldt eller om vi misser noget?
-
         # Gør altid træk der tillader at vende et kort.
         # Altid lav det træk der åbner for den største bunke med kort at vende.
         sorted_columns = SolitaireBoard.sorted_hiddencolumn()
@@ -511,8 +508,6 @@ class SolitaireBoard():
 
                 temp_card = col[index] #Card(rank=col[index].rank, suit=col[index].suit)
 
-                # -> stod her før           
-
                 # Frigør ved at flytte en konge til en tom kolonne
                 if temp_card.rank == 13: 
                     temp_move = SolitaireBoard.make_way_for_the_king(col, index)
@@ -521,7 +516,7 @@ class SolitaireBoard():
                         return
                 # Frigør ved at flytte kort fra en kolonne til en anden kolonne
                 else:
-                    res = SolitaireBoard.look_for_column_destinatination(temp_card)
+                    res = SolitaireBoard.look_for_column_destination(temp_card)
                     if res:
                         SolitaireBoard.current_move = ColToColMove(col, res, abs(index))
                         return
@@ -536,7 +531,7 @@ class SolitaireBoard():
                                     SolitaireBoard.current_move = temp_move
                                     return
                             else:    
-                                res = SolitaireBoard.look_for_column_destinatination(talon_card)
+                                res = SolitaireBoard.look_for_column_destination(talon_card)
                                 if res:
                                     SolitaireBoard.current_move = TalonToColMove(res)
                                     return
@@ -550,7 +545,7 @@ class SolitaireBoard():
                                     SolitaireBoard.current_move = temp_move
                                     return
                             else:
-                                res = SolitaireBoard.look_for_column_destinatination(foundation_card)
+                                res = SolitaireBoard.look_for_column_destination(foundation_card)
                                 if res:
                                     SolitaireBoard.current_move = FoundationToColMove(foundation, res)
                                     return
@@ -561,29 +556,6 @@ class SolitaireBoard():
                     if res:
                         SolitaireBoard.current_move = ToFoundationMove(col, res)
                         return
-
-
-
-    #[ ] Flyt kun fra kolonne til kolonne hvis det tillader at få vendt et kort eller at lave kolonnerne smooth.
-
-    #[ ] Ryd ikke et spot med mindre der en konge der klar til at tage spottet.
-
-    #[ ] Kun spil en konge hvis kolonnerne med den største bunke af kort der kan vendes
-    #[ ] eller at spille en anden konge tillader at rykke at rykke fra en kolonne derpå ig vende et kort.
-
-    #[✔] Kun byg videre på foundation fra 3+ hvis det ikke påvirke det næste kort beskyttelse 
-    #[✔] eller at det et træk der tillader at lave et spil eller ryk frigør at vende et kort     
-    #[?] ellers så skal det åbne muligheden for at overføre en bunke af samme farve mønster så der kan vendes et kort
-    #[?] eller så frigøre et spot til en konge der venter.
-
-    #[✔] Flyt eller ryk kun en 5'er-8'er hvis det tillader at vende et kort med det samme
-    #[X] det er smooth med det næste kort I kolonnen
-    #[?] der er ikke blevet rykket andre kort til den kolonnen
-    # hvis der bare ikke er andre muligheder.
-
-    # alle dine nødvendige kort ser ud til at være i bunkerne som skal vendes
-    # flyt straks alle kort som kan op I foundation for måske at kunne åbne
-    # for muligheden at lave et træk med et andet kort der allerede findes men er blokeret.
 
         # queue til træk der ikke vender et nyt kort 
         move_queue = Queue()
@@ -609,7 +581,7 @@ class SolitaireBoard():
         if SolitaireBoard.waste and (len(SolitaireBoard.waste) + len(SolitaireBoard.deck) > 3 or len(SolitaireBoard.deck) == 0):
             temp_card = Card(rank=SolitaireBoard.waste[-1].rank, suit=SolitaireBoard.waste[-1].suit)
             if temp_card.rank < 5 or (temp_card.rank > 8 and temp_card.rank < 13):
-                res = SolitaireBoard.look_for_column_destinatination(temp_card)
+                res = SolitaireBoard.look_for_column_destination(temp_card)
                 if res:
                     move_queue.put(TalonToColMove(res))
 
@@ -633,7 +605,7 @@ class SolitaireBoard():
                 if temp_move.move_type != MoveType.NOMOVE:
                     move_queue.put(temp_move)
             else:
-                res = SolitaireBoard.look_for_column_destinatination(temp_card)
+                res = SolitaireBoard.look_for_column_destination(temp_card)
                 if res:
                     move_queue.put(TalonToColMove(res))
 
@@ -789,7 +761,7 @@ class SolitaireBoard():
         return []
 
 
-    def look_for_column_destinatination(original_card):
+    def look_for_column_destination(original_card):
         card_to_find = Card(rank=original_card.rank+1)
         if original_card.suit == "H" or original_card.suit == "D":
             card_to_find.suit = "C"
@@ -819,7 +791,7 @@ class SolitaireBoard():
         # forsøg at rydde en plads til kongen
         for temp_col in SolitaireBoard.columns:
             if temp_col[0].hidden == False:
-                res = SolitaireBoard.look_for_column_destinatination(temp_col[0])
+                res = SolitaireBoard.look_for_column_destination(temp_col[0])
                 if res:
                     return ColToColMove(temp_col, res, len(temp_col))
         return NoMoveMove()
@@ -857,7 +829,7 @@ if __name__ == "__main__":
     GAMEMODE = 1 
     
     if GAMEMODE == 1:
-        NGAMES = 5000
+        NGAMES = 100
         MOVELIMIT = 500
         print("Simulating " + str(NGAMES) + " solitaires")
         print("Limit is set to " + str(MOVELIMIT) + " moves per solitaire.")

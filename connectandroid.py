@@ -172,7 +172,7 @@ def fix_card():
     for c in cards:
         carddetection.draw_results(current_frame, c)
 
-    #??
+    #
     global cards_in_sections
     cards_in_sections = solitairesections.place_cards(current_frame, cards)
     cards_in_sections = card_adapter(cards_in_sections)
@@ -203,12 +203,11 @@ def confirm_identification():
 
 def next_move():
     global ui_state
-
     if ui_state == 0: #init
         take_picture()
         btn_suggest_move['text'] = "Confirm"
         ui_state = 1
-    elif ui_state == 1: #confirm card detection
+    elif ui_state == 1: 
         if SolitaireBoard.cards_need_identification():
             print("There are unidentified cards..")
             SolitaireBoard.identify_cards(cards_in_sections)
@@ -280,13 +279,13 @@ btn_test6.grid(row=3, column=3, padx=5, pady=5)
 logic_output_label = Label(root, text="Logic state")
 logic_output_label.grid(row=4, column=0, padx=5, pady=5, columnspan=2)
 
-logic_output_box = Text(root, height=15, width=45)
+logic_output_box = Text(root, height=4, width=45)
 logic_output_box.grid(row=6, column=0, padx=5, pady=5, columnspan=4)
 
 detection_output_label = Label(root, text="Cards detected")
 detection_output_label.grid(row=7, column=0, padx=5, pady=5, columnspan=2)
 
-detection_output_box = Text(root, height=4, width=45)
+detection_output_box = Text(root, height=15, width=45)
 detection_output_box.grid(row=8, column=0, padx=5, pady=5, columnspan=4)
 
 fix_label = Label(root, text="Correction input")
